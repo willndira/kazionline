@@ -1,0 +1,34 @@
+/*
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+*/
+/* 
+    Created on : Feb 25, 2016, 12:41:01 PM
+    Author     : Kim
+*/
+
+.fixture-list, .fixture-matchday
+{
+    padding: 5px 0;
+    margin-bottom: 2px;
+    cursor: pointer;
+}
+.fixture-list:hover, .fixture-matchday
+{
+    background-color: #eaeaea;
+}
+.fixture-matchday
+{
+    text-align: center;
+    cursor:text;
+}
+.fixture-list .team
+{
+    font-size: 14px;
+    font-weight: 500;
+}
+.fixture-list .vs
+{
+    color: #990000;
+}
