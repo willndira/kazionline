@@ -156,7 +156,6 @@
       </div>
 
       <form class="feedback" style="display: none;">
-
       </form>    
     </div>
 
