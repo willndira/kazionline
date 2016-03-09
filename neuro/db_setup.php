@@ -20,8 +20,9 @@ $sql = "CREATE TABLE IF NOT EXISTS jobs"
         . "title TINYTEXT CHARACTER SET utf32 NOT NULL,"
         . "description LONGTEXT CHARACTER SET utf32 NOT NULL,"
         . "category INT(2) NOT NULL,"
-        . "duration INT(255) NOT NULL,"
-        . "amount DECIMAL(12,2) NOT NULL,"
+        . "deadline INT(255) NOT NULL,"
+        . "amount_min DECIMAL(12,2) NOT NULL,"
+        . "amount_max DECIMAL(12,2) NOT NULL,"
         . "owner INT(255) NOT NULL,"
         . "status INT(1) NOT NULL DEFAULT 1,"
         . "submitted_file VARCHAR(255) NOT NULL DEFAULT 0,"
@@ -54,6 +55,13 @@ $mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);
 $sql = "CREATE TABLE IF NOT EXISTS job_tags"
         . "(id INT(255) NOT NULL AUTO_INCREMENT PRIMARY KEY,"
         . "name TINYTEXT CHARACTER SET utf32)";
+
+$mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);
+
+$sql = "CREATE TABLE IF NOT EXISTS used_job_tags"
+        . "(id INT(255) NOT NULL AUTO_INCREMENT PRIMARY KEY,"
+        . "job_id INT(255) NOT NULL,"
+        . "tag_id INT(255) NOT NULL)";
 
 $mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);
 
