@@ -38,9 +38,10 @@ session_start();
           background-color: #ccffff;
       }  
 
-      .jobs-section
+      .bids-section
       {
-          border-left: 1px  #e9e9ea solid;
+          border-left: #d8d5d5 1px solid;
+          border-right: 1px #d8d5d5 solid;
       }
       .bootstrap-tagsinput 
       {
@@ -125,175 +126,118 @@ session_start();
     </ul>
 
   </nav>
+  
   <div id="page-container">
 
     <div class="col-lg-12 white-bg data-container">
       <br><br>
-      <div class="col-lg-2">            
-        <h3><small>MY DOCKET</small></h3>
-        <div class="panel panel-primary">
-          <div class="panel-heading">
-            Todo list
-          </div>
-          <div class="list-group">
-            <a href="#" class="list-group-item">
-              Job 1
-              <span class="pull-right text-muted small"><em>4 minutes ago</em>
-              </span>
-            </a>
-            <a href="#" class="list-group-item">
-              Job 2
-              <span class="pull-right text-muted small"><em>12 minutes ago</em>
-              </span>
-            </a>                            
-          </div> 
-        </div>
-        <div class="panel panel-primary">
-          <div class="panel-heading">
-            Jobs I Posted
-          </div>
-          <div class="list-group">
-            <a href="#" class="list-group-item">
-              Nothing here                    
-            </a>                                             
-          </div> 
-        </div>
+      <div class="col-lg-3">            
+        <h3><small>CREATOR</small></h3>
+        
+        <div class="row"><br>
+          <div class="col-lg-4"><img src="img/avatars/default_avatar.png" style="height: 100px; width: auto;"></div>
+          <div class="col-lg-8">Brian Kim<br><i class="fa fa-fw fa-map-marker"></i><small>Nairobi, Kenya</small></div></div>
+        <br>
+        <h3><small>JOB INFO</small></h3>
+        <strong>Brief</strong><br>
+        <span>bluh bluh bluh</span><br><br>
+        <strong>Category</strong><br>
+        <span>Article Writing</span><br><br>
+        <strong>Tags</strong><br>
+        <span>C++, Graphics</span><br><br>
+        <strong>Attachments</strong><br>
+        <span>bluh bluh bluh</span><br><br>
+        <strong>Description</strong><br>
+        <span>bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh</span>
 
       </div>
-      <div class="col-lg-10 jobs-section">            
-        <div class="alert alert-info col-lg-8">
-          <p>Do you have a job, task, project or homework that you need to get done <strong>fast</strong>? 
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<button type="button" class="btn btn-sm btn-danger" data-toggle="modal" data-target="#new_job_modal">Post It</button>
-          </p>
+      <div class="col-lg-7 bids-section">            
+        <div class="col-lg-8">
+          <p><strong>Added On:</strong> 28th Feb 2016 </p>
+          <p><strong>Due by:</strong> 28th Mar 2016 </p>
+          <p><strong>Budget:</strong> KSH 12,000 - 18,000 </p>
+          <br><br>
         </div>
-        <div class="col-lg-12">
-          <h3 class="page-header">Latest jobs</h3>
-        </div>            
+              
         <div class="col-lg-12 jobs-list-container">
-
+          <fieldset>
+            <legend><h3><small>BIDS</small></h3></legend>
+          </fieldset>
           <div class="row col-lg-12">
-            <div><span id="search_bar_txt">Search jobs</span> <i class="fa fa-fw fa-search"></i><br><br></div>
-            <div class="col-lg-4"><input type="text" class="form-control jobs-search" id="search_text" placeholder="Type anything"></div>
-            <div class="col-lg-4">
-              <select class="form-control jobs-search" id="search_category" name="search_category">
-                <option value="">Select Category</option>
-                <option value="7">Article Writing</option>
-                <option value="1">Accounting, Business &amp; Finance</option>
-                <option value="2">Agriculture</option>
-                <option value="3">Creating &amp; Design</option>
-                <option value="4">Data Entry</option>
-                <option value="5">Engineering &amp; Construction</option>
-                <option value="6">IT, Websites &amp; Software</option> 
-                <option value="8">Legal</option>
-                <option value="9">Marketing &amp; Sales</option>
-                <option value="10">Product Sourcing &amp; Manufacturing</option>
-                <option value="11">Local Jobs &amp; Services</option>
-                <option value="12">Transport &amp; Logistics</option>
-                <option value="13">Other</option>
-              </select>
-            </div>
-            <div class="col-lg-4">
-              <input type="text" class="form-control jobs-search" name="search_tags" id="search_tags" placeholder="Search tags">&nbsp;<small>e.g. Physics, CPA, C++, Furniture</small>
-            </div> 
-            <div class="col-lg-4">
-              <div class="input-group">
-                <span class="input-group-addon">KSH</span>
-                <input type="text" class="form-control jobs-search" id="search_amount" placeholder="Amount">
-                <span class="input-group-addon">.00</span>                      
-              </div>
-            </div>
-            <div class="row col-lg-12"><br><br></div>                
-            <table class="table table-hover">
-              <thead>
-              <th>Summary</th>
-              <th>Description</th>
-              <th>Category</th>
-              <th>Tags</th>
-              <th>Due By</th>
-              <th>KES</th>
-              </thead>
-              <tbody id="jobs-listings">
-                <tr>
-                  <td style="width: 18%;">something something something</td>
-                  <td style="width: 30%;">bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh whatever</td>
-                  <td style="width: 15%;">Article Writing</td>
-                  <td style="width: 13%;">Health, Pharmacy, Medicine</td>
-                  <td style="width: 11%;">28th Apr 2016</td>
-                  <td style="width: 20%;">12,000 - 18,000</td>
+            <div><strong><small>29 bids</small></strong><br><br><br></div>
+            
+            <table class="table">              
+              <tbody id="bids-listings">
+                <tr dx="1">
+                  <td dx="1">
+                    <div class="col-lg-2"><img src="img/avatars/default_avatar.png" style="width: 80px; height: auto"></div>
+                    <div class="col-lg-10"><div class="col-lg-4">Name</div><div class="col-lg-4"><i class="fa fa-fw fa-map-marker"></i><small>Nairobi, Kenya</small></div><div class="col-lg-4"><span class="pull-right"><a href="javascript:;" vec="bid-edit" dx="1"><i class="fa fa-fw fa-pencil"></i></a><a href="javascript:;" vec="bid-delete" dx="1"><i class="fa fa-fw fa-trash-o"></i></a>&nbsp;<small><i class="fa fa-clock-o fa-fw"></i>12h</small></span></div><div class="col-lg-3"><i class="fa fa-fw fa-credit-card"></i> <small><span class="bid-amount">12,500</span></small></div></div>
+                    <div class="col-lg-12"><br><span class="bid-comment">bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh</span> </div>
+                  </td>
                 </tr>
                 <tr>
-                  <td>something</td>
-                  <td>bluh bluh bluh whatever</td>
-                  <td>Article Writing</td>
-                  <td>Health, Pharmacy, Medicine</td>
-                  <td>28th Apr 2016</td>
-                  <td>12,000 - 18,000</td>
+                  <td>
+                    <div class="col-lg-2"><img src="img/avatars/default_avatar.png" style="width: 80px; height: auto"></div>
+                    <div class="col-lg-10">Name&nbsp;&nbsp;&nbsp;&nbsp;<i class="fa fa-fw fa-map-marker"></i>Nairobi, Kenya&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i class="fa fa-fw fa-credit-card"></i> 12,500&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="pull-right"><i class="fa fa-fw fa-pencil"></i><i class="fa fa-fw fa-trash-o"></i> 12h</span></div>
+                    <div class="col-lg-12"><br>bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh </div>
+                  </td>
                 </tr>
                 <tr>
-                  <td>something</td>
-                  <td>bluh bluh bluh whatever</td>
-                  <td>Article Writing</td>
-                  <td>Health, Pharmacy, Medicine</td>
-                  <td>28th Apr 2016</td>
-                  <td>12,000 - 18,000</td>
+                  <td>
+                    <div class="col-lg-2"><img src="img/avatars/default_avatar.png" style="width: 80px; height: auto"></div>
+                    <div class="col-lg-10">Name&nbsp;&nbsp;&nbsp;&nbsp;<i class="fa fa-fw fa-map-marker"></i>Nairobi, Kenya&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i class="fa fa-fw fa-credit-card"></i> 12,500&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="pull-right"><i class="fa fa-fw fa-pencil"></i><i class="fa fa-fw fa-trash-o"></i> 12h</span></div>
+                    <div class="col-lg-12"><br>bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh </div>
+                  </td>
                 </tr>
                 <tr>
-                  <td>something</td>
-                  <td>bluh bluh bluh whatever</td>
-                  <td>Article Writing</td>
-                  <td>Health, Pharmacy, Medicine</td>
-                  <td>28th Apr 2016</td>
-                  <td>12,000 - 18,000</td>
+                  <td>
+                    <div class="col-lg-2"><img src="img/avatars/default_avatar.png" style="width: 80px; height: auto"></div>
+                    <div class="col-lg-10">Name&nbsp;&nbsp;&nbsp;&nbsp;<i class="fa fa-fw fa-map-marker"></i>Nairobi, Kenya&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i class="fa fa-fw fa-credit-card"></i> 12,500&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="pull-right"><i class="fa fa-fw fa-pencil"></i><i class="fa fa-fw fa-trash-o"></i> 12h</span></div>
+                    <div class="col-lg-12"><br>bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh </div>
+                  </td>
                 </tr>
                 <tr>
-                  <td>something</td>
-                  <td>bluh bluh bluh whatever</td>
-                  <td>Article Writing</td>
-                  <td>Health, Pharmacy, Medicine</td>
-                  <td>28th Apr 2016</td>
-                  <td>12,000 - 18,000</td>
+                  <td>
+                    <div class="col-lg-2"><img src="img/avatars/default_avatar.png" style="width: 80px; height: auto"></div>
+                    <div class="col-lg-10">Name&nbsp;&nbsp;&nbsp;&nbsp;<i class="fa fa-fw fa-map-marker"></i>Nairobi, Kenya&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i class="fa fa-fw fa-credit-card"></i> 12,500&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="pull-right"><i class="fa fa-fw fa-pencil"></i><i class="fa fa-fw fa-trash-o"></i> 12h</span></div>
+                    <div class="col-lg-12"><br>bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh </div>
+                  </td>
                 </tr>
                 <tr>
-                  <td>something</td>
-                  <td>bluh bluh bluh whatever</td>
-                  <td>Article Writing</td>
-                  <td>Health, Pharmacy, Medicine</td>
-                  <td>28th Apr 2016</td>
-                  <td>12,000 - 18,000</td>
+                  <td>
+                    <div class="col-lg-2"><img src="img/avatars/default_avatar.png" style="width: 80px; height: auto"></div>
+                    <div class="col-lg-10">Name&nbsp;&nbsp;&nbsp;&nbsp;<i class="fa fa-fw fa-map-marker"></i>Nairobi, Kenya&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i class="fa fa-fw fa-credit-card"></i> 12,500&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="pull-right"><i class="fa fa-fw fa-pencil"></i><i class="fa fa-fw fa-trash-o"></i> 12h</span></div>
+                    <div class="col-lg-12"><br>bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <br><br>
+                    <fieldset><legend>Submit Bid <small>150 chars</small></legend></fieldset>
+                    <div class="col-lg-7"><textarea class="form-control" style="min-height: 150px;" placeholder="Why you want this job"></textarea></div>
+                    <div class="col-lg-5">
+                      <label>How much do you want?</label>
+                      <div class="input-group"><span class="input-group-addon">KSH</span><input type="text" class="form-control edit-bid-amount" placeholder="0">
+                            <span class="input-group-addon">.00</span>
+                        </div>
+                      <br><br>
+                      <button class="btn btn-primary">Submit <i class="fa fa-fw fa-angle-double-right"></i></button>
+                    </div>
+                  </td>
                 </tr>
               </tbody>
             </table>
-            <div class="col-lg-6" id="pagination-div">
-              <nav>
-                <ul class="pagination">
-                  <li><a href="#">First</a></li>
-                  <li>
-                    <a href="#" aria-label="Previous">
-                      <span aria-hidden="true">&laquo;</span>
-                    </a>
-                  </li>
-                  <li><a href="#">1</a></li>
-                  <li><a href="#">2</a></li>
-                  <li><a href="#">3</a></li>
-                  <li><a href="#">4</a></li>
-                  <li><a href="#">5</a></li>
-                  <li>
-                    <a href="#" aria-label="Next">
-                      <span aria-hidden="true">&raquo;</span>
-                    </a>
-                  </li>
-                  <li><a href="#">Last</a></li>
-                </ul>
-              </nav>
-            </div>
-          </div>
-
+            
 
         </div>
         <div class="col-lg-12"><br></div>
-      </div>        
+      </div>  
 
+      
     </div>
+      <div class="col-lg-2">
+          waddup
+      </div>
 
     <!-- Modal -->
     <div class="modal fade" id="new_job_modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"  data-backdrop="static" data-keyboard="false">
@@ -388,6 +332,56 @@ session_start();
     </div>
 
     <div id="jobs-load" style="display: none;"></div>
+    
+<div class="modal fade" id="edit_bid_modal" data-backdrop="static" data-keyboard="false">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title"><i class="fa fa-fw fa-edit"></i>&nbsp;Edit bid</h4>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+        <div class="col-lg-7">
+          <textarea class="form-control edit-bid-comment" style="min-height: 100px;" placeholder="Bid Comment"></textarea>
+        </div>
+        <div class="col-lg-5">
+          <div class="input-group">
+            <span class="input-group-addon">KSH</span>
+            <input type="text" class="form-control edit-bid-amount" placeholder="Bid Amount">
+            <span class="input-group-addon">.00</span>
+          </div>
+        </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span id="edit-bid-loading-gif"></span>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="save-bid-edits">Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="delete_bid_modal" data-backdrop="static" data-keyboard="false">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title"><i class="fa fa-fw fa-trash-o"></i>&nbsp;Delete bid</h4>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete your bid to this Job?</p>
+      </div>
+      <div class="modal-footer">
+        <span id="delete-bid-loading-gif"></span>
+        <button type="button" class="btn btn-danger" id="delete-bid-sb">Delete</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
     <script src="jquery/jquery-1.10.2.min.js"></script>
     <script src="jquery/jquery.form.js"></script> 
@@ -408,6 +402,8 @@ session_start();
 
           $(function ()
           {
+              //$("#delete_bid_modal").modal('show')
+              
               $("#job_deadline").datepicker({zIndex: 1000000, autohide: true, startDate: tomorrow, format: 'dd/mm/yyyy'});
 
               $("#job_tags, #search_tags").tagsinput({
@@ -482,7 +478,6 @@ session_start();
                           }
                       })
 
-
               $(".jobs-search").on("keypress", function (e)
               {
                   if (e.keyCode == 13)
@@ -496,6 +491,26 @@ session_start();
                   var page = $(this).attr("dx")
                   load_jobs(page)
               })
+              
+              $("[vec='bid-edit']").on("click", function()
+              {
+                  var dx = $(this).attr("dx");
+                  var bid_amount = $("td[dx='"+dx+"']").find("span.bid-amount").html()
+                  var bid_text = $("td[dx='"+dx+"']").find("span.bid-comment").html()
+                  $(".edit-bid-comment").val(bid_text)
+                  $(".edit-bid-amount").val(bid_amount)
+                  $("#save-bid-edits").attr("dx", dx);                  
+                  $("#edit_bid_modal").modal('show')
+                  
+              })
+              
+              $("[vec='bid-delete']").on("click", function()
+              {
+                  var dx = $(this).attr("dx");
+                  $("#delete-bid-sb").attr("dx", dx); 
+                  $("#delete_bid_modal").modal('show')
+              })
+              
 
           })
 
