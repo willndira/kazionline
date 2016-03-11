@@ -42,6 +42,7 @@ $sql = "CREATE TABLE IF NOT EXISTS job_bids"
         . "job_id INT(255) NOT NULL,"
         . "user_id INT(255) NOT NULL,"
         . "comment LONGTEXT CHARACTER SET utf32 NOT NULL,"
+        . "awarded INT(1) NOT NULL DEFAULT 0,"
         . "stamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP)";
 
 $mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);

@@ -1,7 +1,7 @@
 <?php
 
-session_start();
+$arr = ["a"=>1, "b"=>2, "c"=>3, "d"=>4];
 
-var_dump($_SESSION["tmp_jobfiles"]);
+var_dump(array_slice($arr, 0, 2));
 
 //session_destroy();
