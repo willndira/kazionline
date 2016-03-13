@@ -11,6 +11,7 @@ $sql = "CREATE TABLE IF NOT EXISTS users"
         . "avatar VARCHAR(255) NOT NULL,"
         . "balance DECIMAL(12,2) DEFAULT 0,"
         . "total_transacted DECIMAL(12,2) DEFAULT 0,"
+        . "reputation INT(255) NOT NULL DEFAULT 0,"
         . "join_stamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP)";
 
 $mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);
@@ -41,6 +42,7 @@ $sql = "CREATE TABLE IF NOT EXISTS job_bids"
         . "(id INT(255) NOT NULL AUTO_INCREMENT PRIMARY KEY,"
         . "job_id INT(255) NOT NULL,"
         . "user_id INT(255) NOT NULL,"
+        . "amount DECIMAL(12,2) NOT NULL,"
         . "comment LONGTEXT CHARACTER SET utf32 NOT NULL,"
         . "awarded INT(1) NOT NULL DEFAULT 0,"
         . "stamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP)";
@@ -73,3 +75,9 @@ $sql = "CREATE TABLE IF NOT EXISTS job_attachments"
 
 $mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);
 
+$sql = "CREATE TABLE IF NOT EXISTS jobsb_files"
+        . "(id INT(255) NOT NULL AUTO_INCREMENT PRIMARY KEY,"
+        . "job_id INT(255) NOT NULL,"
+        . "file_path VARCHAR(255) NOT NULL)";
+
+$mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);
