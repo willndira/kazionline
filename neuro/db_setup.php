@@ -26,7 +26,6 @@ $sql = "CREATE TABLE IF NOT EXISTS jobs"
         . "amount_max DECIMAL(12,2) NOT NULL,"
         . "owner INT(255) NOT NULL,"
         . "status INT(1) NOT NULL DEFAULT 1,"
-        . "submitted_file VARCHAR(255) NOT NULL DEFAULT 0,"
         . "created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP)";
 
 $mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);
@@ -81,3 +80,14 @@ $sql = "CREATE TABLE IF NOT EXISTS jobsb_files"
         . "file_path VARCHAR(255) NOT NULL)";
 
 $mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);
+
+$sql = "CREATE TABLE IF NOT EXISTS notifications"
+        . "(id INT(255) NOT NULL AUTO_INCREMENT PRIMARY KEY,"
+        . "user_id INT(255) NOT NULL,"
+        . "msg TEXT CHARACTER SET utf32 NOT NULL,"
+        . "is_read INT(1) DEFAULT 0,"
+        . "stamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP)";
+
+$mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);
+
+

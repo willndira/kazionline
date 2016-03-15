@@ -1,10 +1,14 @@
 <?php
 require_once 'neuro/Jobs.php';
+require_once 'neuro/Data.php';
+
 session_start();
 
 //Jobs::cleanup_tmp();
 //$jobs_data = Jobs::loadJobs();
 //$docket = Jobs::loadDocket($_SESSION["sess_id"]);
+$notifications = Data::load_notifications($_SESSION["sess_id"]);
+$job_categories = Data::load_job_categories();
 ?>
 
 <!DOCTYPE html>
@@ -62,6 +66,10 @@ session_start();
           font-size: 16px;
           font-weight: 600;
       }
+      .unread_notif
+      {
+          background-color: #9999ff;
+      }
 
     </style>
 
@@ -82,11 +90,29 @@ session_start();
     <ul class="nav navbar-top-links navbar-right">
       <li class="dropdown">
         <a class="dropdown-toggle navlink" data-toggle="dropdown" href="#">
-          <i class="fa fa-bell fa-fw"></i>  <i class="fa fa-caret-down"></i>
+          <i class="fa fa-bell fa-fw"></i>
+          <?php
+          if(count($notifications["notifications"]) > 0)
+              echo " (".$notifications["unread"].") ";
+          ?>
+          <i class="fa fa-caret-down"></i>
         </a>
         <ul class="dropdown-menu dropdown-alerts">
             <?php
-            echo '<li><a href="javascript:;">No new notifications</a></li>';
+            if(count($notifications["notifications"]) == 0)
+             echo '<li><a href="javascript:;">No new notifications</a></li>';
+            
+            foreach(array_slice($notifications["notifications"], 0, 3) as $notif)
+            {
+                $intro = substr($notif["msg"], 0, strpos($notif["msg"], "!"));
+                $class="";
+                
+                if(!$notif["is_read"])
+                    $class="unread_notif";
+                
+                echo '<li class="'.$class.'">a href="javascript:;">'.$intro.'</a></li>';
+            }
+            
             ?>
           <li>
             <a class="text-center" href="javascript:;" id="see_all_notifs">
@@ -177,19 +203,15 @@ session_start();
             <div class="col-lg-4">
               <select class="form-control jobs-search" id="search_category" name="search_category">
                 <option value="">Select Category</option>
-                <option value="7">Article Writing</option>
-                <option value="1">Accounting, Business &amp; Finance</option>
-                <option value="2">Agriculture</option>
-                <option value="3">Creating &amp; Design</option>
-                <option value="4">Data Entry</option>
-                <option value="5">Engineering &amp; Construction</option>
-                <option value="6">IT, Websites &amp; Software</option> 
-                <option value="8">Legal</option>
-                <option value="9">Marketing &amp; Sales</option>
-                <option value="10">Product Sourcing &amp; Manufacturing</option>
-                <option value="11">Local Jobs &amp; Services</option>
-                <option value="12">Transport &amp; Logistics</option>
-                <option value="13">Other</option>
+                <?php
+                    foreach($job_categories as $cat)
+                    {
+                ?>
+                <option value="<?= $cat["id"] ?>"><?= $cat["name"] ?></option>
+                <?php
+                    }
+                 ?>                
+                <option value="1">Other</option>
               </select>
             </div>
             <div class="col-lg-4">
@@ -213,54 +235,7 @@ session_start();
               <th>KES</th>
               </thead>
               <tbody id="jobs-listings">
-                <tr>
-                  <td style="width: 18%;">something something something</td>
-                  <td style="width: 30%;">bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh whatever</td>
-                  <td style="width: 15%;">Article Writing</td>
-                  <td style="width: 13%;">Health, Pharmacy, Medicine</td>
-                  <td style="width: 11%;">28th Apr 2016</td>
-                  <td style="width: 20%;">12,000 - 18,000</td>
-                </tr>
-                <tr>
-                  <td>something</td>
-                  <td>bluh bluh bluh whatever</td>
-                  <td>Article Writing</td>
-                  <td>Health, Pharmacy, Medicine</td>
-                  <td>28th Apr 2016</td>
-                  <td>12,000 - 18,000</td>
-                </tr>
-                <tr>
-                  <td>something</td>
-                  <td>bluh bluh bluh whatever</td>
-                  <td>Article Writing</td>
-                  <td>Health, Pharmacy, Medicine</td>
-                  <td>28th Apr 2016</td>
-                  <td>12,000 - 18,000</td>
-                </tr>
-                <tr>
-                  <td>something</td>
-                  <td>bluh bluh bluh whatever</td>
-                  <td>Article Writing</td>
-                  <td>Health, Pharmacy, Medicine</td>
-                  <td>28th Apr 2016</td>
-                  <td>12,000 - 18,000</td>
-                </tr>
-                <tr>
-                  <td>something</td>
-                  <td>bluh bluh bluh whatever</td>
-                  <td>Article Writing</td>
-                  <td>Health, Pharmacy, Medicine</td>
-                  <td>28th Apr 2016</td>
-                  <td>12,000 - 18,000</td>
-                </tr>
-                <tr>
-                  <td>something</td>
-                  <td>bluh bluh bluh whatever</td>
-                  <td>Article Writing</td>
-                  <td>Health, Pharmacy, Medicine</td>
-                  <td>28th Apr 2016</td>
-                  <td>12,000 - 18,000</td>
-                </tr>
+                
               </tbody>
             </table>
             <div class="col-lg-6" id="pagination-div">
@@ -304,7 +279,7 @@ session_start();
             <h4 class="modal-title" id="myModalLabel">New Job</h4>
           </div>
           <div class="modal-body" style="height: 500px; overflow-y: scroll;">
-            <form id="job_create_form" action="controller/new_ft.php" method="post" enctype="multipart/form-data">              
+            <form id="job_create_form" action="controller/new_job.php" method="post" enctype="multipart/form-data">              
               <div class="form-group">
                 <label for="job_title">Summary <small>(30 chars)</small></label>
                 <input type="text" class="form-control" name="job_title" id="job_title" placeholder="Very brief summary" required="">
@@ -387,6 +362,49 @@ session_start();
       </div>
     </div>
 
+<div class="modal fade" id="notifs_modal" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">Modal title</h4>
+      </div>
+      <div class="modal-body">
+        
+          <?php
+          
+            foreach($notifications["notifications"] as $notif)
+            {
+                $intro = substr($notif["msg"], 0, strpos($notif["msg"], "!"));
+                $info = substr($notif["msg"], strpos($notif["msg"], "!")+1);
+                
+                $class="";                
+                if(!$notif["is_read"])
+                    $class="unread_notif";
+                
+                
+          ?>
+        <div class="row <?= $class ?>">
+           <div class="col-lg-10">
+              <h4><?= $intro ?></h4>
+            </div>
+            <div class="col-lg-2"><small><?= $notif["time"] ?></small></div>
+            <div class="col-lg-10">
+                <?= $info ?>
+            </div>
+        <div class="col-lg-12"><hr></div>
+        </div>
+        <?php
+            }
+        ?>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>        
+      </div>
+    </div>
+  </div>
+</div>
+    
     <div id="jobs-load" style="display: none;"></div>
 
     <script src="jquery/jquery-1.10.2.min.js"></script>
@@ -482,7 +500,6 @@ session_start();
                           }
                       })
 
-
               $(".jobs-search").on("keypress", function (e)
               {
                   if (e.keyCode == 13)
@@ -496,8 +513,46 @@ session_start();
                   var page = $(this).attr("dx")
                   load_jobs(page)
               })
+                          
+              $("#sb_job_create_form").on("click", function()
+              {
+                    $("#job_create_form").trigger("submit")
+              })
+                          
+              var options1 =
+              {
+                  complete: function (response)
+                  {
+                      if (response.responseText != "ok")
+                          {
+                              $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+result+'</div>')
+                              $(".feedback").show()
+                          }
+                      else
+                          {
+                              $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong>The job owner will inspect your work and get back to you soon<br><em>Just a minute&hellip;</em></div>')
+                              $(".feedback").show()
+                                
+                              setTimeout(function(){ window.location="home.php"}, 1500)
+                          }
+                  }
+              }
+
+              $("#job_create_form").ajaxForm(options1)  
+              
+              
+              $("#see_all_notifs").on("click", function()
+              {
+                  $("#notifs_modal").modal('show')
+                  clear_notifs()
+              })
 
           })
+          
+          function clear_notifs()
+          {
+              $.get("controller/clear_notifications.php")
+          }
 
           function load_jobs(page)
           {
