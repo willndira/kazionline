@@ -2,14 +2,18 @@
 require_once 'neuro/Jobs.php';
 session_start();
 
+$me = $_SESSION["sess_id"];
+//$_SESSION["job_id"] = $_GET["job"];
 //Jobs::cleanup_tmp();
-//$jobs_data = Jobs::loadJobs();
-//$docket = Jobs::loadDocket($_SESSION["sess_id"]);
+
+$job_data = Jobs::loadInfo();
+$notifications = Data::load_notifications($_SESSION["sess_id"]);
+$job_categories = Data::load_job_categories();
+
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
-
   <head>
 
     <meta charset="utf-8">
@@ -18,7 +22,7 @@ session_start();
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>KaziOnline</title>
+    <title><?= $job_data["uj_info"]["title"] ?></title>
 
     <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">     
     <link href="bootstrap/css/timeline.css" rel="stylesheet">    
@@ -88,7 +92,20 @@ session_start();
         </a>
         <ul class="dropdown-menu dropdown-alerts">
             <?php
-            echo '<li><a href="javascript:;">No new notifications</a></li>';
+            if(count($notifications["notifications"]) == 0)
+             echo '<li><a href="javascript:;">No new notifications</a></li>';
+            
+            foreach(array_slice($notifications["notifications"], 0, 3) as $notif)
+            {
+                $intro = substr($notif["msg"], 0, strpos($notif["msg"], "!"));
+                $class="";
+                
+                if(!$notif["is_read"])
+                    $class="unread_notif";
+                
+                echo '<li class="'.$class.'">a href="javascript:;">'.$intro.'</a></li>';
+            }
+            
             ?>
           <li>
             <a class="text-center" href="javascript:;" id="see_all_notifs">
@@ -136,27 +153,34 @@ session_start();
         <h3><small>CREATOR</small></h3>
 
         <div class="row"><br>
-          <div class="col-lg-4"><img src="img/avatars/default_avatar.png" style="height: 100px; width: auto;"></div>
-          <div class="col-lg-8">Brian Kim<br><i class="fa fa-fw fa-map-marker"></i><small>Nairobi, Kenya</small></div></div>
+          <div class="col-lg-4"><img src="<?= $job_data["uj_info"]["avatar"] ?>" style="height: 100px; width: auto;"></div>
+          <div class="col-lg-8"><?= $job_data["uj_info"]["names"] ?><br><i class="fa fa-fw fa-map-marker"></i><small><?= $job_data["uj_info"]["location"] ?></small></div></div>
         <br>
         <h3><small>JOB INFO</small></h3>
         <strong>Brief</strong><br>
-        <span>bluh bluh bluh</span><br><br>
+        <span><?= $job_data["uj_info"]["title"] ?></span><br><br>
         <strong>Category</strong><br>
-        <span>Article Writing</span><br><br>
+        <span><?= $job_data["uj_info"]["category"] ?></span><br><br>
         <strong>Tags</strong><br>
-        <span>C++, Graphics</span><br><br>
+        <span><?= implode(",", $job_data["tags"]) ?></span><br><br>
         <strong>Attachments</strong><br>
-        <span>bluh bluh bluh</span><br><br>
+        <span>
+            <?php
+              foreach($job_data["uj_info"]["attachments"] as $file)
+              {
+                  echo "<a href='download_file.php?id={$file["id"]}'>{$file["basename"]}</a><br>";
+              }
+            ?>
+        </span><br><br>
         <strong>Description</strong><br>
-        <span>bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh</span>
+        <span><?= $job_data["uj_info"]["description"] ?></span>
 
       </div>
       <div class="col-lg-7 bids-section">            
         <div class="col-lg-8">
-          <p><strong>Added On:</strong> 28th Feb 2016 </p>
-          <p><strong>Due by:</strong> 28th Mar 2016 </p>
-          <p><strong>Budget:</strong> KSH 12,000 - 18,000 </p>
+          <p><strong>Created On:</strong> <?= date("jS M Y", $job_data["uj_info"]["created_on"]) ?></p>
+          <p><strong>Due by:</strong> <?= date("jS M Y", $job_data["uj_info"]["deadline"]) ?></p>
+          <p><strong>Budget:</strong> KSH <?= $job_data["uj_info"]["amount_min"]." - ".$job_data["uj_info"]["amount_max"]  ?> </p>
           <br><br>
         </div>
 
@@ -165,67 +189,61 @@ session_start();
             <legend><h3><small>BIDS</small></h3></legend>
           </fieldset>
           <div class="row col-lg-12">
-            <div><strong><small>29 bids</small></strong><br><br><br></div>
+            <div><strong><small><?= count($job_data["bids"]);  ?> bids</small></strong><br><br><br></div>
 
             <table class="table">              
               <tbody id="bids-listings">
-                <tr dx="1">
-                  <td dx="1">
-                    <div class="col-lg-2"><img src="img/avatars/default_avatar.png" style="width: 80px; height: auto"></div>
-                    <div class="col-lg-10"><div class="col-lg-4"><span class="bid-user">Name</span></div><div class="col-lg-4"><i class="fa fa-fw fa-map-marker"></i><small>Nairobi, Kenya</small></div><div class="col-lg-4"><span class="pull-right"><a href="javascript:;" vec="bid-edit" dx="1"><i class="fa fa-fw fa-pencil"></i></a><a href="javascript:;" vec="bid-delete" dx="1"><i class="fa fa-fw fa-trash-o"></i></a>&nbsp;<small><i class="fa fa-clock-o fa-fw"></i>12h</small></span></div><div class="col-lg-3"><i class="fa fa-fw fa-credit-card"></i> <small><span class="bid-amount">12,500</span><br><a href='javascript:;' class="btn btn-xs btn-danger" vec='bid-accept' dx="1">Accept</a></small></div></div>
-                    <div class="col-lg-12"><br><span class="bid-comment">bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh</span> </div>
-                  </td>
-                </tr>
-                <tr dx="2">
-                  <td dx="2">
-                    <div class="col-lg-2"><img src="img/avatars/default_avatar.png" style="width: 80px; height: auto"></div>
-                    <div class="col-lg-10"><div class="col-lg-4"><span class="bid-user">Name</span></div><div class="col-lg-4"><i class="fa fa-fw fa-map-marker"></i><small>Nairobi, Kenya</small></div><div class="col-lg-4"><span class="pull-right"><a href="javascript:;" vec="bid-edit" dx="2"><i class="fa fa-fw fa-pencil"></i></a><a href="javascript:;" vec="bid-delete" dx="2"><i class="fa fa-fw fa-trash-o"></i></a>&nbsp;<small><i class="fa fa-clock-o fa-fw"></i>12h</small></span></div><div class="col-lg-3"><i class="fa fa-fw fa-credit-card"></i> <small><span class="bid-amount">12,500</span><br><a href='javascript:;' class="btn btn-xs btn-danger" vec='bid-accept' dx="2">Accept</a></small></div></div>
-                    <div class="col-lg-12"><br><span class="bid-comment">bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh</span> </div>
-                  </td>
-                </tr>
-                <tr dx="3">
-                  <td dx="3">
-                    <div class="col-lg-2"><img src="img/avatars/default_avatar.png" style="width: 80px; height: auto"></div>
-                    <div class="col-lg-10"><div class="col-lg-4"><span class="bid-user">Name</span></div><div class="col-lg-4"><i class="fa fa-fw fa-map-marker"></i><small>Nairobi, Kenya</small></div><div class="col-lg-4"><span class="pull-right"><a href="javascript:;" vec="bid-edit" dx="3"><i class="fa fa-fw fa-pencil"></i></a><a href="javascript:;" vec="bid-delete" dx="3"><i class="fa fa-fw fa-trash-o"></i></a>&nbsp;<small><i class="fa fa-clock-o fa-fw"></i>12h</small></span></div><div class="col-lg-3"><i class="fa fa-fw fa-credit-card"></i> <small><span class="bid-amount">12,500</span><br><a href='javascript:;' class="btn btn-xs btn-danger" vec='bid-accept' dx="3">Accept</a></small></div></div>
-                    <div class="col-lg-12"><br><span class="bid-comment">bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh</span> </div>
-                  </td>
-                </tr>
-                <tr dx="4">
-                  <td dx="4">
-                    <div class="col-lg-2"><img src="img/avatars/default_avatar.png" style="width: 80px; height: auto"></div>
-                    <div class="col-lg-10"><div class="col-lg-4"><span class="bid-user">Name 4</span></div><div class="col-lg-4"><i class="fa fa-fw fa-map-marker"></i><small>Nairobi, Kenya</small></div><div class="col-lg-4"><span class="pull-right"><a href="javascript:;" vec="bid-edit" dx="4"><i class="fa fa-fw fa-pencil"></i></a><a href="javascript:;" vec="bid-delete" dx="4"><i class="fa fa-fw fa-trash-o"></i></a>&nbsp;<small><i class="fa fa-clock-o fa-fw"></i>12h</small></span></div><div class="col-lg-3"><i class="fa fa-fw fa-credit-card"></i> <small><span class="bid-amount">12,500</span><br><a href='javascript:;' class="btn btn-xs btn-danger" vec='bid-accept' dx="4">Accept</a></small></div></div>
-                    <div class="col-lg-12"><br><span class="bid-comment">bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh</span> </div>
-                  </td>
-                </tr>
-                <tr dx="5">
-                  <td dx="5">
-                    <div class="col-lg-2"><img src="img/avatars/default_avatar.png" style="width: 80px; height: auto"></div>
-                    <div class="col-lg-10"><div class="col-lg-4"><span class="bid-user">Name</span></div><div class="col-lg-4"><i class="fa fa-fw fa-map-marker"></i><small>Nairobi, Kenya</small></div><div class="col-lg-4"><span class="pull-right"><a href="javascript:;" vec="bid-edit" dx="5"><i class="fa fa-fw fa-pencil"></i></a><a href="javascript:;" vec="bid-delete" dx="5"><i class="fa fa-fw fa-trash-o"></i></a>&nbsp;<small><i class="fa fa-clock-o fa-fw"></i>12h</small></span></div><div class="col-lg-3"><i class="fa fa-fw fa-credit-card"></i> <small><span class="bid-amount">12,500</span><br><a href='javascript:;' class="btn btn-xs btn-danger" vec='bid-accept' dx="5">Accept</a></small></div></div>
-                    <div class="col-lg-12"><br><span class="bid-comment">bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh</span> </div>
-                  </td>
-                </tr>
-                <tr dx="6">
-                  <td dx="6">
-                    <div class="col-lg-2"><img src="img/avatars/default_avatar.png" style="width: 80px; height: auto"></div>
-                    <div class="col-lg-10"><div class="col-lg-4"><span class="bid-user">Name</span></div><div class="col-lg-4"><i class="fa fa-fw fa-map-marker"></i><small>Nairobi, Kenya</small></div><div class="col-lg-4"><span class="pull-right"><a href="javascript:;" vec="bid-edit" dx="6"><i class="fa fa-fw fa-pencil"></i></a><a href="javascript:;" vec="bid-delete" dx="6"><i class="fa fa-fw fa-trash-o"></i></a>&nbsp;<small><i class="fa fa-clock-o fa-fw"></i>12h</small></span></div><div class="col-lg-3"><i class="fa fa-fw fa-credit-card"></i> <small><span class="bid-amount">12,500</span><br><a href='javascript:;' class="btn btn-xs btn-danger" vec='bid-accept' dx="6">Accept</a></small></div></div>
-                    <div class="col-lg-12"><br><span class="bid-comment">bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh</span> </div>
-                  </td>
-                </tr>
-                <tr>
+                
+                <?php
+                
+                foreach($job_data["bids"] as $bid)
+                {                
+                    echo "<tr dx='{$bid["id"]}'><td dx='{$bid["id"]}'>"
+                    . "<div class='col-lg-2'><img src='{$bid["avatar"]}' style='width: 80px; height: auto'></div>"
+                    . "<div class='col-lg-10'><div class='col-lg-4'><span class='bid-user'>{$bid["names"]} <i class='fa fa-star' style='color:#FFD700;'></i>{$bid["reputation"]}</span></div><div class='col-lg-4'><i class='fa fa-fw fa-map-marker'></i><small>{$bid["location"]}</small></div>"
+                    . "<div class='col-lg-4'><span class='pull-right'>";
+                    if($bid["bidder"] == $me)
+                    {
+                        echo "<a href='javascript:;' vec='bid-edit' dx='{$bid["id"]}'><i class='fa fa-fw fa-pencil'></i></a><a href='javascript:;' vec='bid-delete' dx='{$bid["id"]}'><i class='fa fa-fw fa-trash-o'></i></a>&nbsp;";
+                    }
+                    
+                    echo "<small><i class='fa fa-clock-o fa-fw'></i>".Jobs::time_gap($bid["stamp"])."</small></span></div><div class='col-lg-3'><i class='fa fa-fw fa-credit-card'></i> <small><span class='bid-amount'>{$bid["amount"]}</span> ";
+                    if($bid["awarded"] == 1)
+                    {
+                        echo "&nbsp;&nbsp;<span><i class='fa fa-fw fa-gift' style='color: #40E0D0;'></span>";
+                    }
+                    
+                    if($job_data["gen_info"]["me"]["is_owner"])
+                    {
+                        echo "<br><a href='javascript:;' class='btn btn-xs btn-danger' vec='bid-accept' dx='1'>Accept</a></small>";
+                    }                    
+                    
+                    echo "</div></div>";                
+                
+                }
+                
+                
+                if(!$job_data["gen_info"]["me"]["has_bidded"])
+                {
+                ?>
+                <tr id="new_bid_tr">
                   <td>
                     <br><br>
                     <fieldset><legend>Submit Bid <small>150 chars</small></legend></fieldset>
-                    <div class="col-lg-7"><textarea class="form-control" style="min-height: 150px;" placeholder="Why you want this job"></textarea></div>
+                    <div class="col-lg-7"><label>Why are you the best candidate?</label><textarea class="form-control new-bid-comment" style="min-height: 150px;" placeholder="Be brief"></textarea></div>
                     <div class="col-lg-5">
                       <label>How much do you want?</label>
-                      <div class="input-group"><span class="input-group-addon">KSH</span><input type="text" class="form-control edit-bid-amount" placeholder="0">
+                      <div class="input-group"><span class="input-group-addon">KSH</span><input type="text" class="form-control new-bid-amount" placeholder="0">
                         <span class="input-group-addon">.00</span>
                       </div>
                       <br><br>
-                      <button class="btn btn-primary">Submit <i class="fa fa-fw fa-angle-double-right"></i></button>
+                      <button class="btn btn-primary" id="new-bid-sb">Submit <i class="fa fa-fw fa-angle-double-right"></i></button>
                     </div>
                   </td>
                 </tr>
+                <?php
+                    }
+                ?>
               </tbody>
             </table>
 
@@ -237,14 +255,65 @@ session_start();
       </div>
       <div class="col-lg-2">
         <fieldset><legend><small>Status</small></legend></fieldset>
-        <span class="label label-primary">&nbsp;&nbsp;Open&nbsp;&nbsp;</span><br><br>
+        
+        <?php
+        $status_class = "primary";
+        $status_text = "Open";
+        
+        if($job_data["uj_info"]["status"] == 2)
+        {
+            $status_class = "warning";
+            $status_text = "Work Ongoing";
+        }
+        if($job_data["uj_info"]["status"] == 3)
+        {
+            $status_class = "success";
+            $status_text = "Pending Confirmation";
+        }
+        
+        ?>
+        
+        <span class="label label-<?= $status_class ?>">&nbsp;&nbsp;<?= $status_text ?>&nbsp;&nbsp;</span><br><br>
+        <?php
+            
+            if($job_data["gen_info"]["me"]["is_owner"] && !$job_data["gen_info"]["job"]["has_bid_awarded"])
+            {
+        
+        ?>
         <fieldset><legend><small>Edit Job</small></legend></fieldset>
         <button type="button" data-toggle="modal" data-target="#new_job_modal" class="btn btn-danger">Edit Job &nbsp;&nbsp;&nbsp;<i class="fa fa-fw fa-edit"></i></button><br><br>
+        <?php
+            }
+            if(($job_data["gen_info"]["me"]["is_owner"] && !$job_data["gen_info"]["job"]["has_bid_awarded"]) || $job_data["uj_info"]["deadline"] > time())
+            {
+        ?>        
+        <fieldset><legend><small>Delete Job</small></legend></fieldset>        
+        <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#delete_job_modal" id="job_delete">Delete Job &nbsp;&nbsp;<i class="fa fa-fw fa-trash-o"></i></button><br><br>
+        <?php
+            }
+            if($job_data["gen_info"]["me"]["my_bid_awarded"])
+            {
+        ?>        
         <fieldset><legend><small>Upload your work</small></legend></fieldset>
         <div id="job-upload-div"></div>
-        <button type="button" class="btn btn-primary">Upload &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i class="fa fa-fw fa-upload"></i></button><br><br>
-        <fieldset><legend><small>Delete Job</small></legend></fieldset>        
-        <button type="button" class="btn btn-danger">Delete Job &nbsp;&nbsp;<i class="fa fa-fw fa-trash-o"></i></button><br><br>
+        <button type="button" class="btn btn-primary" id="upload_sb_work">Upload &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i class="fa fa-fw fa-upload"></i></button><br><br>
+        <?php
+            }
+            if($job_data["gen_info"]["me"]["is_owner"] && $job_data["uj_info"]["status"] == 3)
+            {
+        ?>
+        <fieldset><legend><small>submitted work</small></legend></fieldset>
+        <table class="table">
+          <thead>File</thead>
+          <tbody>
+        <?php
+            foreach($job_data["sb_files"] as $file)
+            {
+                echo "<tr><td><a href='download_file.php?id=".$file["id"]."'>{$file["basename"]}</a></td></tr>";
+            }
+        ?>
+          </tbody>
+        </table>
         <fieldset><legend><small>rate submitted work</small></legend></fieldset>        
         <div id="sbwork-rating">
             <input type="radio" name="example" class="rating" value="1">
@@ -253,7 +322,9 @@ session_start();
             <input type="radio" name="example" class="rating" value="4">
             <input type="radio" name="example" class="rating" value="5">
         </div>
-
+        <?php
+            }
+        ?>
 
       </div>
 
@@ -266,7 +337,7 @@ session_start();
               <h4 class="modal-title" id="myModalLabel"><i class="fa fa-fw fa-edit"></i>&nbsp;Edit Job</h4>
             </div>
             <div class="modal-body" style="height: 500px; overflow-y: scroll;">
-              <form id="job_create_form" action="controller/new_ft.php" method="post" enctype="multipart/form-data">              
+              <form id="job_edit_form" action="controller/update_job.php" method="post" enctype="multipart/form-data">              
                 <div class="form-group">
                   <label for="job_title">Summary <small>(30 chars)</small></label>
                   <input type="text" class="form-control" name="job_title" id="job_title" placeholder="Very brief summary" required="">
@@ -279,19 +350,16 @@ session_start();
                   <label for="job_criteria">Category</label>
                   <select class="form-control" id="job_category" name="job_category" required="">
                     <option value="">Select Category</option>
-                    <option value="7">Article Writing</option>
-                    <option value="1">Accounting, Business &amp; Finance</option>
-                    <option value="2">Agriculture</option>
-                    <option value="3">Creating &amp; Design</option>
-                    <option value="4">Data Entry</option>
-                    <option value="5">Engineering &amp; Construction</option>
-                    <option value="6">IT, Websites &amp; Software</option> 
-                    <option value="8">Legal</option>
-                    <option value="9">Marketing &amp; Sales</option>
-                    <option value="10">Product Sourcing &amp; Manufacturing</option>
-                    <option value="11">Local Jobs &amp; Services</option>
-                    <option value="12">Transport &amp; Logistics</option>
-                    <option value="13">Other</option>
+                    <option value="">Select Category</option>
+                <?php
+                    foreach($job_categories as $cat)
+                    {
+                ?>
+                <option value="<?= $cat["id"] ?>"><?= $cat["name"] ?></option>
+                <?php
+                    }
+                 ?>                
+                <option value="1">Other</option>
                   </select>
                 </div>
 
@@ -303,8 +371,7 @@ session_start();
                   <strong>Attach Files</strong>&nbsp;&nbsp;<small>(if any) max <strong>25MB</strong> total</small>
                   <div id="job_attach_files"></div>
                 </div>
-                <span class=""
-                      <fieldset>
+                <fieldset>
                     <legend>Due by</legend>
                     <label>Pick date</label>
                     <div class="form-group">
@@ -313,7 +380,7 @@ session_start();
                         <span class="input-group-addon"><i class="fa fa-fw fa-calendar"></i></span>
                       </div>
                     </div>                
-                  </fieldset>
+                </fieldset>
 
                   <fieldset>
                     <legend>Your Budget</legend>
@@ -399,6 +466,25 @@ session_start();
           </div>
         </div>
       </div>
+      
+      <div class="modal fade" id="delete_job_modal" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+              <h4 class="modal-title"><i class="fa fa-fw fa-trash-o"></i>&nbsp;Delete Job</h4>
+            </div>
+            <div class="modal-body">
+              <p>Are you sure you want to delete this job?</p>
+            </div>
+            <div class="modal-footer">
+              <span id="delete-bid-loading-gif"></span>
+              <button type="button" class="btn btn-danger" id="delete-job-conf">Delete</button>
+              <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div class="modal fade" id="accept_bid_modal" data-backdrop="static" data-keyboard="false">
         <div class="modal-dialog">
@@ -418,6 +504,49 @@ session_start();
           </div>
         </div>
       </div>
+      
+      <div class="modal fade" id="notifs_modal" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">Modal title</h4>
+      </div>
+      <div class="modal-body">
+        
+          <?php
+          
+            foreach($notifications["notifications"] as $notif)
+            {
+                $intro = substr($notif["msg"], 0, strpos($notif["msg"], "!"));
+                $info = substr($notif["msg"], strpos($notif["msg"], "!")+1);
+                
+                $class="";                
+                if(!$notif["is_read"])
+                    $class="unread_notif";
+                
+                
+          ?>
+        <div class="row <?= $class ?>">
+           <div class="col-lg-10">
+              <h4><?= $intro ?></h4>
+            </div>
+            <div class="col-lg-2"><small><?= $notif["time"] ?></small></div>
+            <div class="col-lg-10">
+                <?= $info ?>
+            </div>
+        <div class="col-lg-12"><hr></div>
+        </div>
+        <?php
+            }
+        ?>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>        
+      </div>
+    </div>
+  </div>
+</div>
 
 
       <script src="jquery/jquery-1.10.2.min.js"></script>
@@ -469,7 +598,7 @@ session_start();
                 
                 $("#job-upload-div").uploadFile(
                         {
-                            url: "controller/job_file_upload.php",
+                            url: "controller/job_sb_files_upload.php",
                             fileName: 'jobfile',
                             uploadStr: "<i class='glyphicon glyphicon-paperclip'></i>",
                             multiple: true,
@@ -492,7 +621,7 @@ session_start();
                             {
                                 data = JSON.parse(data)
 
-                                $.post("controller/job_file_upl_delete.php", {name: data[0]},
+                                $.post("controller/job_sb_upl_delete.php", {name: data[0]},
                                         function (resp, textStatus, jqXHR)
                                         {
 
@@ -517,7 +646,6 @@ session_start();
                                     }
                             }
                         })
-
 
                 $("#job_attach_files").uploadFile(
                         {
@@ -569,20 +697,7 @@ session_start();
                             }
                         })
 
-                $(".jobs-search").on("keypress", function (e)
-                {
-                    if (e.keyCode == 13)
-                        {
-                            load_jobs(1);
-                        }
-                })
-
-                $("ul.pagination li a").on("click", function ()
-                {
-                    var page = $(this).attr("dx")
-                    load_jobs(page)
-                })
-
+                
                 $("[vec='bid-edit']").on("click", function ()
                 {
                     var dx = $(this).attr("dx");
@@ -628,37 +743,308 @@ session_start();
                     {
                         case "1":
                             verdict = "Very Dissatisfied"
-                            rate_reaction.append("<div class='text-danger'><small>"+verdict+"</small></div><div><br><button type='button' class='btn btn-danger'>Reopen Job</button><br><small>You may reopen it for someone else to do it</small><br><br><button type='button' class='btn btn-danger'>Close Job</button><br><small>Payment will be finalized and job closed</small>")
+                            rate_reaction.append("<div class='text-danger'><small>"+verdict+"</small></div><div><br><button type='button' class='btn btn-danger' id='reopen_job'>Reopen Job</button><br><small>You may reopen it for someone else to do it</small><br><br><button type='button' class='btn btn-danger' id='close_job'>Close Job</button><br><small>Payment will be finalized and job closed</small>")
                             break
                         case "2":
                             verdict = "Dissatisfied"
-                            rate_reaction.append("<div class='text-warning'><small>"+verdict+"</small></div><div><br><button type='button' class='btn btn-danger'>Reopen Job</button><br><small>You may reopen it for someone else to do it</small><br><br><button type='button' class='btn btn-danger'>Close Job</button><br><small>Payment will be finalized and job closed</small>")
+                            rate_reaction.append("<div class='text-warning'><small>"+verdict+"</small></div><div><br><button type='button' class='btn btn-danger' id='reopen_job'>Reopen Job</button><br><small>You may reopen it for someone else to do it</small><br><br><button type='button' class='btn btn-danger' id='close_job'>Close Job</button><br><small>Payment will be finalized and job closed</small>")
                             break
                         case "3":
                             verdict = "Fair Enough"
-                            rate_reaction.append("<div class='text-info'><small>"+verdict+"</small></div><div><br><br><button type='button' class='btn btn-danger'>Close Job</button><br><small>Payment will be finalized and job closed</small>")
+                            rate_reaction.append("<div class='text-info'><small>"+verdict+"</small></div><div><br><br><button type='button' class='btn btn-danger' id='close_job'>Close Job</button><br><small>Payment will be finalized and job closed</small>")
                             break
                         case "4":
                             verdict = "Good"
-                            rate_reaction.append("<div class='text-primary'><small>"+verdict+"</small></div><div><br><br><button type='button' class='btn btn-danger'>Close Job</button><br><small>Payment will be finalized and job closed</small>")
+                            rate_reaction.append("<div class='text-primary'><small>"+verdict+"</small></div><div><br><br><button type='button' class='btn btn-danger' id='close_job'>Close Job</button><br><small>Payment will be finalized and job closed</small>")
                             break
                         default:
                             verdict = "Very Good"
-                            rate_reaction.append("<div class='text-success'><small>"+verdict+"</small></div><div><br><br><button type='button' class='btn btn-danger'>Close Job</button><br><small>Payment will be finalized and job closed</small>")
+                            rate_reaction.append("<div class='text-success'><small>"+verdict+"</small></div><div><br><br><button type='button' class='btn btn-danger' id='close_job'>Close Job</button><br><small>Payment will be finalized and job closed</small>")
                     }
                     
-                    $('#sbwork-rating').after(rate_reaction)
-                    
+                    $('#sbwork-rating').after(rate_reaction)                    
                     
                 });
+                
+                $("#upload_sb_work").on("click", function()
+                {
+                    $.ajax({
+                        url:"controller/job_sb_conf_upload.php",
+                        type:"GET",
+                        async:true,
+                        success:function(result)
+                        {
+                            if(result == "ok")
+                            {
+                                $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong>The job owner will inspect your work and get back to you soon<br><em>Just a minute&hellip;</em></div>')
+                                $(".feedback").show()
+                                
+                                setTimeout(function(){ window.location="jobs.php"}, 1500)
+                            }
+                            else
+                            {
+                                $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+result+'</div>')
+                                $(".feedback").show()
+                            }
+                            
+                        },
+                        error:function()
+                        {
+                            $(".feedback").html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Oops:</strong> Lost Connection</div>')
+                            $(".feedback").show()
+                        }
+                    })
+                })
+                
+              var options1 =
+              {
+                  complete: function (response)
+                  {
+                      if (response.responseText != "ok")
+                          {
+                              $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+result+'</div>')
+                              $(".feedback").show()
+                          }
+                      else
+                          {
+                              $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong><br><em>Just a minute&hellip;</em></div>')
+                              $(".feedback").show()
+                                
+                               setTimeout(function(){window.location="jobs.php"}, 1500)
+                          }
+                  }
+              }
 
-                              
+                $("#job_edit_form").ajaxForm(options1)                
+                
+                $("#save-bid-edits").on("click", function()
+                {
+                    var cmt = $(".edit-bid-comment").val()
+                    var amt = $(".edit-bid-amount").val()
+                    var dx = $(this).attr("dx")
+                    
+                    $.ajax({
+                        url:"controller/edit_bid.php",
+                        type:"POST",
+                        async:true,
+                        data:{cmt:cmt, amt:amt},
+                        success:function(result)
+                        {
+                            if(result == "ok")
+                            {
+                                $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong><br>Your edits have been applied</div>')
+                                $(".feedback").show()
+                                
+                                $("td[dx='"+dx+"']").find("span.bid-comment").html(cmt)
+                                $("td[dx='"+dx+"']").find("span.bid-amount").html(amt)
+                                
+                            }
+                            else
+                            {
+                                $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+result+'</div>')
+                                $(".feedback").show()
+                            }
+                        },
+                        error:function()
+                        {
+                            $(".feedback").html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Oops:</strong> Lost Connection</div>')
+                            $(".feedback").show()
+                        }
+                    })
+                })
+                
+                $("#delete-bid-sb").on("click", function()
+                {
+                   var dx = $(this).attr("dx")
+                    
+                    $.ajax({
+                        url:"controller/delete_bid.php",
+                        type:"POST",
+                        async:true,
+                        success:function(result)
+                        {
+                            if(result == "ok")
+                            {
+                                $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong><br>Your edits have been applied</div>')
+                                $(".feedback").show()
+                                
+                                $("td[dx='"+dx+"']").slideUp()                                                                
+                            }
+                            else
+                            {
+                                $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+result+'</div>')
+                                $(".feedback").show()
+                            }
+                        },
+                        error:function()
+                        {
+                            $(".feedback").html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Oops:</strong> Lost Connection</div>')
+                            $(".feedback").show()
+                        }
+                    })
+                })
+                
+                $("#accept-bid-sb").on("click", function()
+                {
+                    var dx = $(this).attr("dx")
+                    
+                    $.ajax({
+                        url:"controller/bid_accept.php",
+                        type:"POST",
+                        async:true,
+                        data:{dx:dx},
+                        success:function(result)
+                        {
+                            if(result == "ok")
+                            {
+                                $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong><br>Your edits have been applied</div>')
+                                $(".feedback").show()                                                               
+                            }
+                            else
+                            {
+                                $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+result+'</div>')
+                                $(".feedback").show()
+                            }
+                        },
+                        error:function()
+                        {
+                            $(".feedback").html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Oops:</strong> Lost Connection</div>')
+                            $(".feedback").show()
+                        }
+                    })
+                })
+                
+                $("#delete-job-conf").on("click", function()
+                {                    
+                    $.ajax({
+                        url:"controller/delete_job.php",
+                        type:"POST",
+                        async:true,
+                        success:function(result)
+                        {
+                            if(result == "ok")
+                            {
+                                $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong><br><em>Just a moment&hellip;</em></div>')
+                                $(".feedback").show()
+                                
+                                setTimeout(function(){window.location="home.php"}, 1500)                                                               
+                            }
+                            else
+                            {
+                                $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+result+'</div>')
+                                $(".feedback").show()
+                            }
+                        },
+                        error:function()
+                        {
+                            $(".feedback").html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Oops:</strong> Lost Connection</div>')
+                            $(".feedback").show()
+                        }
+                    })
+                })
+                
+                $("#reopen_job").on("click", function()
+                {                    
+                    $.ajax({
+                        url:"controller/delete_job.php",
+                        type:"POST",
+                        async:true,
+                        data:{rating:work_rating},
+                        success:function(result)
+                        {
+                            if(result == "ok")
+                            {
+                                $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successfully reopened!: </strong><br><em>Just a moment&hellip;</em></div>')
+                                $(".feedback").show()
+                                
+                                setTimeout(function(){window.location="jobs.php"}, 1500)                                                               
+                            }
+                            else
+                            {
+                                $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+result+'</div>')
+                                $(".feedback").show()
+                            }
+                        },
+                        error:function()
+                        {
+                            $(".feedback").html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Oops:</strong> Lost Connection</div>')
+                            $(".feedback").show()
+                        }
+                    })
+                })
+                
+                $("#close_job").on("click", function()
+                {                    
+                    $.ajax({
+                        url:"controller/delete_job.php",
+                        type:"POST",
+                        async:true,
+                        data:{rating:work_rating},
+                        success:function(result)
+                        {
+                            if(result == "ok")
+                            {
+                                $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successfully closed!: </strong><br><em>Just a moment&hellip;</em></div>')
+                                $(".feedback").show()
+                                
+                                setTimeout(function(){window.location="home.php"}, 1500)                                                               
+                            }
+                            else
+                            {
+                                $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+result+'</div>')
+                                $(".feedback").show()
+                            }
+                        },
+                        error:function()
+                        {
+                            $(".feedback").html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Oops:</strong> Lost Connection</div>')
+                            $(".feedback").show()
+                        }
+                    })
+                })
+                
+                $("#sb_job_create_form").on("click", function()
+                {
+                    $("#job_edit_form").trigger("submit")
+                })
+                
+                $("#new-bid-sb").on("click", function()
+                {
+                    var cmt = $(".new-bid-comment").val()
+                    var amt = $(".new-bid-amount").val()
+                                        
+                    $.ajax({
+                        url:"controller/new_bid.php",
+                        type:"POST",
+                        async:true,
+                        data:{cmt:cmt, amt:amt},
+                        success:function(result)
+                        {
+                            if(result == "ok")
+                            {
+                                $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong><br>Your bid has been submitted<br><em>Just a minute&hellip;</em></div>')
+                                $(".feedback").show()                               
+                                
+                                setTimeout(function(){window.location="jobs.php"}, 1500)
+                            }
+                            else
+                            {
+                                $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+result+'</div>')
+                                $(".feedback").show()
+                            }
+                        },
+                        error:function()
+                        {
+                            $(".feedback").html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Oops:</strong> Lost Connection</div>')
+                            $(".feedback").show()
+                        }
+                    })
+                })
+                
                 
                 
             })
 
       </script>
 
-
-
-      </html>
+</html>
