@@ -82,9 +82,11 @@ class Access
 
     public static function check_cookie()
     {
-        if(isset($_COOKIE['lmlm_sessid']))
+        $sess = filter_input(INPUT_COOKIE, 'googol_kz_sessid');
+        
+        if($sess)
         {
-            return Security::cipher_decrypt($_COOKIE['lmlm_sessid']);            
+            return Security::cipher_decrypt($sess);            
         }
         
         return FALSE;

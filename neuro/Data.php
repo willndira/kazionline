@@ -1,8 +1,8 @@
 <?php
 
-require_once 'connid.php';
-require_once 'security.php';
-require_once 'Jobs.php';
+require_once __DIR__.'/connid.php';
+require_once __DIR__.'/security.php';
+require_once __DIR__.'/Jobs.php';
 
 class Data
 {

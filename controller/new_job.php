@@ -10,4 +10,7 @@ $deadline = filter_input(INPUT_POST, "job_deadline");
 $amount_min = filter_input(INPUT_POST, "job_amount_min");
 $amount_max = filter_input(INPUT_POST, "job_amount_max");
 
-echo Jobs::newJob($title, $desc, $category, $tags, $deadline, $min_budget, $max_budget);
+if(!isset($_SESSION))
+    session_start();
+
+echo Jobs::newJob($title, $desc, $category, $tags, $deadline, $amount_min, $amount_max);

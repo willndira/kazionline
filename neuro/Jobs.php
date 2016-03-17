@@ -121,12 +121,12 @@ class Jobs
         if($type == 1)
         {
             $table_name = "job_attachments";
-            $obj_array = $_SESSION["tmp_jobfiles"];
+            $obj_array = isset($_SESSION["tmp_jobfiles"]) ? $_SESSION["tmp_jobfiles"]:NULL;
         }
         else
         {
             $table_name = "jobsb_files";
-            $obj_array = $_SESSION["tmp_jobsb_files"];
+            $obj_array = isset($_SESSION["tmp_jobsb_files"])?$_SESSION["tmp_jobsb_files"]:NULL;
         }
         
         if (isset($obj_array))
@@ -134,27 +134,31 @@ class Jobs
             $sql = "INSERT INTO {$table_name}(job_id, file_path) VALUES ";
 
             $count = 0;
-            foreach ($_SESSION["tmp_jobfiles"] as $key => $tmp_name)
+            foreach ($obj_array as $tmp_name)
             {
                 $count++;
                 $new_path = __DIR__ . "/../usr_files/" . $tmp_name;
+                $saved_path = "usr_files/" . $tmp_name;
                 $tmp_dir = __DIR__ . "/../usr_files/tmp/";
 
                 rename($tmp_dir . $tmp_name, $new_path);
+                
+                $sql.="({$job_id}, '{$saved_path}')";
 
-                unset($obj_array[$key]);
-
-                $sql.="({$job_id}, '{$new_path}')";
-
-                if ($count < count($obj_array) - 1)
+                if ($count < count($obj_array))
                     $sql.=",";
                 else
                     $sql.=";";
-            }
-
+                
+            }            
+                        
             $mysqli->query($sql) or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
 
-            unset($obj_array);
+            if($type == 1)            
+                unset($_SESSION["tmp_jobfiles"]);
+            
+            else
+                unset($_SESSION["tmp_jobsb_files"]);
         }
     }
 
@@ -206,9 +210,14 @@ class Jobs
         $min_budget = Security::clean_data($min_budget);
         $max_budget = Security::clean_data($max_budget);
 
-        if (Security::check_empty([$title, $desc, $category, $tags, $deadline, $min_budget, $max_budget]))
+        if (!Security::check_empty([$title, $desc, $category, $tags, $deadline, $min_budget, $max_budget]))
         {
             return "Please fill all fields. Only attachments are optional";
+        }
+        
+        if($max_budget <= $min_budget)
+        {
+            return "Budget set incorrectly. Check again";
         }
 
         $owner = $_SESSION["sess_id"];
@@ -251,43 +260,36 @@ class Jobs
     {
         global $mysqli;
 
-        $sql = "SELECT j.title, j.description, j.deadline, FORMAT(j.amount_min, 0) amount_1, FORMAT(j.amount_max, 0) amount_2, jc.name category "
+        $sql = "SELECT j.id, j.title, j.description, j.deadline, FORMAT(j.amount_min, 0) amount_1, FORMAT(j.amount_max, 0) amount_2, jc.name category "
                 . "FROM jobs j INNER JOIN job_categories jc ON j.category=jc.id WHERE j.status=1 ";
 
         if (!empty($search) || !empty($cat) || !empty($tags) || !empty($amount))
-        {
-            $AND = FALSE;
+        {            
             if (!empty($search))
             {
-                $sql.= " AND (title LIKE '%{$search}%' OR title LIKE '%{$search}%') ";
-                $AND = TRUE;
+                $sql.= " AND (j.title LIKE '%{$search}%' OR j.description LIKE '%{$search}%') ";                
             }
 
             if (!empty($cat))
             {
-                if ($AND)
-                    $sql.=" AND ";
-                $sql .= " category={$cat} ";
-                $AND = TRUE;
+                $sql .= " AND category={$cat} ";                
             }
 
             if (!empty($amount))
             {
-                if ($AND)
-                    $sql.=" AND ";
-                $sql.=" (amount_min<={$amount} AND amount_max>={$amount}) ";
-                $AND = TRUE;
+                $sql.=" AND (amount_min<={$amount} AND amount_max>={$amount}) ";               
             }
 
             if (!empty($tags))
             {
                 //tags are comma separated
-                if ($AND)
-                    $sql.=" AND ";
-                $sql.=" id IN(SELECT job_id FROM used_job_tags WHERE tag_id IN({$tags})) ";
+                $sql.=" AND j.id IN(SELECT job_id FROM used_job_tags WHERE tag_id IN({$tags})) ";
             }
         }
-
+        
+        $sql.=" ORDER BY j.created_on DESC ";
+        
+        
         $jobs = [];
 
         $res_j = $mysqli->query($sql) or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
@@ -301,8 +303,8 @@ class Jobs
             if (strlen($row["description"]) > 200)
                 $min_desc.="&hellip;<a href='javascript:;' vec='" . $row["id"] . "'>See more</a>";
 
-            $jobs[$row["id"]] = ["title" => $row["title"], "category" => $row["category"], "due_by" => date("jS M Y", $row["deadline"]),
-                "min_desc" => $min_desc, "max_desc" => $row["description"], "budget" => "{$row["amount_1"]}-{$row["amount_2"]}"];
+            $jobs[$row["id"]] = ["id"=>$row["id"], "title" => $row["title"], "category" => $row["category"], "due_by" => date("jS M Y", $row["deadline"]),
+                "min_desc" => $min_desc, "max_desc" => $row["description"], "budget" => "{$row["amount_1"]} - {$row["amount_2"]}"];
         }
         $res_j->close();
 
@@ -324,14 +326,14 @@ class Jobs
             $jobs[$job_id]["tags"] = $tag_ns;
 
             $res_tn->close();
-        }
-
+        } 
+        
         $tag_stmt->close();
 
         $highest = 0;
         $lowest = 0;
-
-
+        
+        
         if ($page <= 4)
         {
             $highest = $total_pages > 7 ? 7 : $total_pages;
@@ -340,8 +342,8 @@ class Jobs
         {
             $highest = $page + 3;
             $lowest = $page - 3;
-        }
-
+        }        
+        
         $pagination_nav = '<nav><ul class="pagination">';
 
         $first = "";
@@ -364,12 +366,12 @@ class Jobs
         for ($i = $lowest; $i <= $highest; ++$i)
         {
             if ($i == $page)
-                $pagination_nav.='<li class="active"><a href="javascript:;">' . $i . '</a></li>';
+                $pagination_nav.='<li class="active"><a href="javascript:;">'.$i.'</a></li>';
             else
-                $pagination_nav.='<li><a href="javascript:;" dx="' . $i . '">' . $i . '</a></li>';
+                $pagination_nav.='<li><a href="javascript:;" dx="'.$i.'">' . $i . '</a></li>';
         }
 
-        if ($highest == $page)
+        if ($highest == 0 || $highest == $page)
         {
             $last = '<li class="disabled"><a href="javascript:;">Last</a></li>';
             $raquo = '<li class="disabled"><a href="javascript:;" aria-label="Next"><span aria-hidden="true">&raquo;</span></a></li>';
@@ -386,7 +388,7 @@ class Jobs
 
         foreach (array_slice($jobs, ($page - 1) * 12, 12) as $id => $job)
         {
-            $html.="<tr><td style='width: 18%;'><a href='jobs.php?id=" . $id . "'>{$job["title"]}</a></td><td style='width: 30%;'>{$job["min_desc"]}</td><td style='width: 15%;'>{$job["category"]}</td><td style='width: 13%;'>{$job["tags"]}</td><td style='width: 11%;'>{$job["due_by"]}</td><td style='width: 20%;'>{$job["budget"]}</td></tr>";
+            $html.="<tr><td style='width: 18%;'><a href='jobs.php?job={$job["id"]}'>{$job["title"]}</a></td><td style='width: 30%;'>{$job["min_desc"]}</td><td style='width: 15%;'>{$job["category"]}</td><td style='width: 13%;'>{$job["tags"]}</td><td style='width: 11%;'>{$job["due_by"]}</td><td style='width: 20%;'>{$job["budget"]}</td></tr>";
         }
         
         if(strlen($html) == 0)
@@ -400,6 +402,8 @@ class Jobs
         global $mysqli;
 
         $docket = [];
+        $docket["docket"] = [];
+        $docket["todo"] = [];
 
         $res = $mysqli->query("SELECT id, title, owner FROM jobs WHERE owner={$user_id} OR id IN"
                 . "(SELECT job_id FROM job_bids WHERE user_id={$user_id} AND awarded=1) ORDER BY created_on DESC")
@@ -423,7 +427,7 @@ class Jobs
         return $docket;
     }
 
-    public static function updateJob($title, $desc, $category, $tags, $min_budget, $max_budget)
+    public static function updateJob($title, $desc, $category, $tags, $deadline, $min_budget, $max_budget)
     {
         global $mysqli;
 
@@ -437,12 +441,12 @@ class Jobs
 
         $job_id = $_SESSION["job_id"];
 
-        if (self::auth_job($job_id, $_SESSION["sess_id"]))
+        if (!self::auth_job($job_id, $_SESSION["sess_id"]))
         {
             return "Only the owner can do this operation";
         }
 
-        if (Security::check_empty([$title, $desc, $category, $tags, $deadline, $min_budget, $max_budget]))
+        if (!Security::check_empty([$title, $desc, $category, $tags, $deadline, $min_budget, $max_budget]))
         {
             return "Please fill all fields. Only attachments are optional";
         }
@@ -637,7 +641,7 @@ class Jobs
         $bid_amount = Security::clean_data($bid_amount);
         $bid_comment = Security::clean_data($bid_comment);
 
-        if (Security::check_empty([$bid_amount, $bid_comment]))
+        if (!Security::check_empty([$bid_amount, $bid_comment]))
             return "Please fill all fields";
 
         $user_id = $_SESSION["sess_id"];
@@ -651,9 +655,21 @@ class Jobs
             $res->close();
             return "You have already bidded for this job";
         }
+        $res->close();
+        
+        $res_c = $mysqli->query("SELECT id FROM job_bids WHERE job_id={$job_id} AND awarded=1")
+                or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
+
+        if ($res_c->num_rows)
+        {
+            $res_c->close();
+            return "This job has already been taken";
+        }
+        $res_c->close();      
+        
 
         $sql = "INSERT INTO job_bids(job_id, user_id, amount, comment) "
-                . "VALUES ({$job_id}, {$user_id}, {$bid_amount}, {$bid_comment})";
+                . "VALUES ({$job_id}, {$user_id}, {$bid_amount}, '{$bid_comment}')";
 
         $mysqli->query($sql) or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
 
@@ -667,7 +683,7 @@ class Jobs
         $bid_amount = Security::clean_data($bid_amount);
         $bid_comment = Security::clean_data($bid_comment);
 
-        if (Security::check_empty([$bid_amount, $bid_comment]))
+        if (!Security::check_empty([$bid_amount, $bid_comment]))
             return "Please fill all fields";
 
         $user_id = $_SESSION["sess_id"];
@@ -714,20 +730,21 @@ class Jobs
         $job_id = $_SESSION["job_id"];
         $user_id = $_SESSION["sess_id"];
         
-        if(Security::check_empty([$bid_id]))
+        if(!Security::check_empty([$bid_id]))
             return "Empty data found";
 
-        if (self::auth_job($job_id, $user_id))
+        if (!self::auth_job($job_id, $user_id))
             return "Only job owners can accept bids";
         
         $res_e = $mysqli->query("SELECT id FROM job_bids WHERE job_id={$job_id} AND id={$bid_id}") 
                         or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
         
-        if ($res_e->num_rows)
+        if(!$res_e->num_rows)
         {
             $res_e->close();
             return "Bid doesn't exist";
         }
+        
         $res_e->close();
 
         $res_c = $mysqli->query("SELECT id FROM job_bids WHERE job_id={$job_id} AND awarded=1")
@@ -742,16 +759,18 @@ class Jobs
         
         $bid_inf = self::get_bid_owner($bid_id);
         
-        //check balance
+        //check balance        
+              
         $res_b = $mysqli->query("SELECT id FROM users WHERE id={$user_id} AND balance >= {$bid_inf["amount"]}")
                 or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
         
-        if ($res_c->num_rows)
+        
+        if ($res_b->num_rows)
         {
-            $res_c->close();
+            $res_b->close();
             return "You do not have enough money in your account. KSH {$bid_inf["amount"]} needs to be deducted ";
         }
-        $res_c->close();
+        $res_b->close();
         
         //move the money
         
@@ -770,8 +789,8 @@ class Jobs
         $bidder = self::get_bid_owner($bid_id);
         $ttl_ddl = self::get_20chartitle_deadline();
         
-        $notif = "Bid accepted! Your bid for '".$ttl_ddl["title"]."' has been accepted! You are required to submit your work not later than "
-                . date("jS M Y", $ttl_ddl["deadlie"]);
+        $notif = "Bid accepted! Your bid for {$ttl_ddl["title"]} has been accepted! You are required to submit your work not later than "
+                . date("jS M Y", $ttl_ddl["deadline"]);
         
         $mysqli->query("INSERT INTO notifications (user_id, msg) VALUES ({$bidder["id"]}, '{$notif}')")
                 or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
@@ -893,11 +912,12 @@ class Jobs
         $gen_info["me"]["my_bid_awarded"] = FALSE;
         $gen_info["job"]["has_bid_awarded"] = FALSE;
         
-        $sql = "SELECT u.names, u.location, u.avatar, c.name category, j.owner, j.title, j.description, j.deadline, j.amount_min, j.amount_max, j.status, "
+        $sql = "SELECT u.names, u.location, u.avatar, j.category cat_id, c.name category, j.owner, j.title, j.description, j.deadline, j.amount_min, j.amount_max, j.status, "
                 . "UNIX_TIMESTAMP(j.created_on) created_on FROM jobs j INNER JOIN users u ON j.owner=u.id "
                 . "INNER JOIN job_categories c ON j.category=c.id "
-                . "WHERE j.id={$job_id}";                
-                        
+                . "WHERE j.id={$job_id}"; 
+                
+                                
         $res_uj = $mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);
         $uj_info = $res_uj->fetch_assoc();
         $res_uj->close();
@@ -905,7 +925,7 @@ class Jobs
         if($uj_info["owner"] == $me)
             $gen_info["me"]["is_owner"] = TRUE;
         
-        $res_tags = $mysqli->query("SELECT t.* FROM used_job_tags ut INNER JOIN job_tags jt ON t.id=ut.tag_id "
+        $res_tags = $mysqli->query("SELECT jt.* FROM used_job_tags ut INNER JOIN job_tags jt ON jt.id=ut.tag_id "
                 . "WHERE ut.job_id={$job_id} ") or die($mysqli->error." ".__FILE__." line ".__LINE__);
         
         while($tag = $res_tags->fetch_assoc())
@@ -915,12 +935,12 @@ class Jobs
         
         $res_tags->close();
         
-        $res_attach = $mysqli->query("SELECT file_path, id FROM used_job_tags WHERE job_id={$job_id}") 
+        $res_attach = $mysqli->query("SELECT file_path, id FROM job_attachments WHERE job_id={$job_id}") 
                 or die($mysqli->error." ".__FILE__." line ".__LINE__);
                 
         while($attach = $res_attach->fetch_assoc())
         {
-            $attachments[] = ["id"=>$attach["id"], "basename"=>pathinfo($attach["filepath"], PATHINFO_BASENAME)];
+            $attachments[] = ["id"=>$attach["id"], "basename"=>pathinfo($attach["file_path"], PATHINFO_BASENAME)];
         }
         $res_attach->close();
         
@@ -932,7 +952,7 @@ class Jobs
             $sb_files[] = ["id"=>$sb["id"], "basename"=>pathinfo($sb["filepath"], PATHINFO_BASENAME)];
         }
         
-        $sql = "SELECT u.id bidder, u.names, u.avatar, u.reputation, b.id, b.amount, b.awarded, UNIX_TIMESTAMP(b.stamp) stamp FROM job_bids b "
+        $sql = "SELECT u.id bidder, u.location, u.names, u.avatar, u.reputation, b.id, b.amount, b.awarded, b.comment, UNIX_TIMESTAMP(b.stamp) stamp FROM job_bids b "
                 . "INNER JOIN users u ON b.user_id=u.id WHERE b.job_id={$job_id}";
                 
         $res_bids = $mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);
@@ -963,13 +983,13 @@ class Jobs
         $now = date("U");
         
         if($now - $stamp < 3600)
-            $gap = floor(($now - $stamp)/60)."m ago";
+            $gap = floor(($now - $stamp)/60)."m";
         else if($now - $stamp < 3600 * 24)
-            $gap = floor(($now - $stamp)/3600)."h ago";
+            $gap = floor(($now - $stamp)/3600)."h";
         else if($now - $stamp < 3600 * 48)
             $gap = "1d ago";
         else if($now - $stamp < 3600 * 24 * 7)
-            $gap = floor(($now - $stamp) / (3600 * 24))."d ago";
+            $gap = floor(($now - $stamp) / (3600 * 24))."d";
         else
             $gap = date("jS M", $stamp);
         

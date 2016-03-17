@@ -4,13 +4,12 @@ require_once 'neuro/Data.php';
 
 session_start();
 
-//Jobs::cleanup_tmp();
-//$jobs_data = Jobs::loadJobs();
-//$docket = Jobs::loadDocket($_SESSION["sess_id"]);
+Jobs::cleanup_tmp();
+$jobs_data = Jobs::loadJobs();
+$docket = Jobs::loadDocket($_SESSION["sess_id"]);
 $notifications = Data::load_notifications($_SESSION["sess_id"]);
 $job_categories = Data::load_job_categories();
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -39,7 +38,7 @@ $job_categories = Data::load_job_categories();
       }
       body
       {
-          background-color: #ccffff;
+          /*background-color: #ccffff;*/
       }  
 
       .jobs-section
@@ -59,7 +58,7 @@ $job_categories = Data::load_job_categories();
       }
       #jobs-load
       {
-          opacity: 0.6;
+          
       }
       #search_bar_txt
       {
@@ -142,7 +141,7 @@ $job_categories = Data::load_job_categories();
           <li><a href="#"><i class="fa fa-gear fa-fw"></i>Terms &amp; Conditions</a>
           </li>
           <li class="divider"></li>
-          <li><a href="#"><i class="fa fa-sign-out fa-fw"></i> Logout</a>
+          <li><a href="logout.php"><i class="fa fa-sign-out fa-fw"></i> Logout</a>
           </li>
         </ul>
         <!-- /.dropdown-user -->
@@ -162,16 +161,20 @@ $job_categories = Data::load_job_categories();
             Todo list
           </div>
           <div class="list-group">
-            <a href="#" class="list-group-item">
-              Job 1
-              <span class="pull-right text-muted small"><em>4 minutes ago</em>
-              </span>
+            <?php
+                if(count($docket["todo"]) == 0)
+                    echo '<a href="#" class="list-group-item">Nothing here </a>';
+                
+                foreach($docket["todo"] as $todo)
+                {
+            ?>
+            <a href="jobs.php?job=<?= $todo["id"] ?>" class="list-group-item">
+              <?= $todo["title"] ?>              
             </a>
-            <a href="#" class="list-group-item">
-              Job 2
-              <span class="pull-right text-muted small"><em>12 minutes ago</em>
-              </span>
-            </a>                            
+            <?php
+                }
+            ?>
+                                        
           </div> 
         </div>
         <div class="panel panel-primary">
@@ -179,9 +182,19 @@ $job_categories = Data::load_job_categories();
             Jobs I Posted
           </div>
           <div class="list-group">
-            <a href="#" class="list-group-item">
-              Nothing here                    
-            </a>                                             
+              <?php
+                if(count($docket["docket"]) == 0)
+                    echo '<a href="#" class="list-group-item">Nothing here </a>';
+                
+                foreach($docket["docket"] as $dock)
+                {
+            ?>
+            <a href="jobs.php?job=<?= $dock["id"] ?>" class="list-group-item">
+              <?= $dock["title"] ?>              
+            </a>
+            <?php
+                }
+            ?>                                          
           </div> 
         </div>
 
@@ -206,6 +219,8 @@ $job_categories = Data::load_job_categories();
                 <?php
                     foreach($job_categories as $cat)
                     {
+                        if($cat["name"] == "Other")
+                            continue;
                 ?>
                 <option value="<?= $cat["id"] ?>"><?= $cat["name"] ?></option>
                 <?php
@@ -239,27 +254,7 @@ $job_categories = Data::load_job_categories();
               </tbody>
             </table>
             <div class="col-lg-6" id="pagination-div">
-              <nav>
-                <ul class="pagination">
-                  <li><a href="#">First</a></li>
-                  <li>
-                    <a href="#" aria-label="Previous">
-                      <span aria-hidden="true">&laquo;</span>
-                    </a>
-                  </li>
-                  <li><a href="#">1</a></li>
-                  <li><a href="#">2</a></li>
-                  <li><a href="#">3</a></li>
-                  <li><a href="#">4</a></li>
-                  <li><a href="#">5</a></li>
-                  <li>
-                    <a href="#" aria-label="Next">
-                      <span aria-hidden="true">&raquo;</span>
-                    </a>
-                  </li>
-                  <li><a href="#">Last</a></li>
-                </ul>
-              </nav>
+              
             </div>
           </div>
 
@@ -292,19 +287,17 @@ $job_categories = Data::load_job_categories();
                 <label for="job_criteria">Category</label>
                 <select class="form-control" id="job_category" name="job_category" required="">
                   <option value="">Select Category</option>
-                  <option value="7">Article Writing</option>
-                  <option value="1">Accounting, Business &amp; Finance</option>
-                  <option value="2">Agriculture</option>
-                  <option value="3">Creating &amp; Design</option>
-                  <option value="4">Data Entry</option>
-                  <option value="5">Engineering &amp; Construction</option>
-                  <option value="6">IT, Websites &amp; Software</option> 
-                  <option value="8">Legal</option>
-                  <option value="9">Marketing &amp; Sales</option>
-                  <option value="10">Product Sourcing &amp; Manufacturing</option>
-                  <option value="11">Local Jobs &amp; Services</option>
-                  <option value="12">Transport &amp; Logistics</option>
-                  <option value="13">Other</option>
+                  <?php
+                    foreach($job_categories as $cat)
+                    {
+                        if($cat["name"] == "Other")
+                            continue;
+                ?>
+                <option value="<?= $cat["id"] ?>"><?= $cat["name"] ?></option>
+                <?php
+                    }
+                 ?>                
+                <option value="1">Other</option>
                 </select>
               </div>
 
@@ -367,11 +360,16 @@ $job_categories = Data::load_job_categories();
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title">Modal title</h4>
+        <h4 class="modal-title"><i class="fa fa-fw fa-bell"></i> Notifications</h4>
       </div>
       <div class="modal-body">
         
           <?php
+          
+            if(count($notifications["notifications"]) == 0)
+            {
+                echo '<div class="row"><div class="col-lg-4">No notifications yet</div></div>';
+            }
           
             foreach($notifications["notifications"] as $notif)
             {
@@ -426,6 +424,9 @@ $job_categories = Data::load_job_categories();
 
           $(function ()
           {
+              
+              load_jobs(1)
+              
               $("#job_deadline").datepicker({zIndex: 1000000, autohide: true, startDate: tomorrow, format: 'dd/mm/yyyy'});
 
               $("#job_tags, #search_tags").tagsinput({
@@ -441,13 +442,13 @@ $job_categories = Data::load_job_categories();
                   typeahead: {
                       afterSelect: function (val)
                       {
-                          this.$element.val("");
+                          this.$element.val("");                          
                       },
                       source: function (query)
                       {
                           return $.getJSON("controller/search_tags.php", {term: query})
                       }
-                  }
+                  }                  
               })
 
               $("#job_attach_files").uploadFile(
@@ -507,6 +508,10 @@ $job_categories = Data::load_job_categories();
                         load_jobs(1);
                     }
               })
+              $("#search_category, #search_tags").on("change", function()
+              {
+                  load_jobs(1)
+              })
               
               $("ul.pagination li a").on("click", function()
               {
@@ -525,7 +530,7 @@ $job_categories = Data::load_job_categories();
                   {
                       if (response.responseText != "ok")
                           {
-                              $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+result+'</div>')
+                              $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+response.responseText+'</div>')
                               $(".feedback").show()
                           }
                       else
