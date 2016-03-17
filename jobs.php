@@ -1,10 +1,20 @@
 <?php
 require_once 'neuro/Jobs.php';
+require_once 'neuro/Data.php';
+require_once 'neuro/security.php';
+
 session_start();
 
+Security::check_session(TRUE);
+
 $me = $_SESSION["sess_id"];
-//$_SESSION["job_id"] = $_GET["job"];
-//Jobs::cleanup_tmp();
+
+$job_id = filter_input(INPUT_GET, "job");
+
+if($job_id)
+    $_SESSION["job_id"] = $job_id;
+
+Jobs::cleanup_tmp();
 
 $job_data = Jobs::loadInfo();
 $notifications = Data::load_notifications($_SESSION["sess_id"]);
@@ -38,9 +48,9 @@ $job_categories = Data::load_job_categories();
       {
           background-color: #ffffff;
       }
-      body
+      .badge-blue
       {
-          background-color: #ccffff;
+          background-color: #0066ff;
       }  
 
       .bids-section
@@ -135,7 +145,7 @@ $job_categories = Data::load_job_categories();
           <li><a href="#"><i class="fa fa-gear fa-fw"></i>Terms &amp; Conditions</a>
           </li>
           <li class="divider"></li>
-          <li><a href="#"><i class="fa fa-sign-out fa-fw"></i> Logout</a>
+          <li><a href="logout.php"><i class="fa fa-sign-out fa-fw"></i> Logout</a>
           </li>
         </ul>
         <!-- /.dropdown-user -->
@@ -158,23 +168,42 @@ $job_categories = Data::load_job_categories();
         <br>
         <h3><small>JOB INFO</small></h3>
         <strong>Brief</strong><br>
-        <span><?= $job_data["uj_info"]["title"] ?></span><br><br>
+        <span id="job-info-brief"><?= $job_data["uj_info"]["title"] ?></span><br><br>
         <strong>Category</strong><br>
         <span><?= $job_data["uj_info"]["category"] ?></span><br><br>
+        <span id="job-info-category" style="display: none"><?= $job_data["uj_info"]["cat_id"] ?></span>
         <strong>Tags</strong><br>
-        <span><?= implode(",", $job_data["tags"]) ?></span><br><br>
+        <span>
+        <?php
+            $tags_names = [];
+            
+            foreach($job_data["tags"] as $tag)
+            {
+                $tag_names[] = $tag["name"];                
+            }
+            
+            echo implode(",", $tag_names);
+        ?>
+        </span>
+        <span id="tag-ids" style="display:none;"><?= json_encode($job_data["tags"]) ?></span>
+        <br><br>
         <strong>Attachments</strong><br>
         <span>
             <?php
-              foreach($job_data["uj_info"]["attachments"] as $file)
+              
+              if(count($job_data["attachments"]) == 0)
+                  echo "No files attached";
+              
+              foreach($job_data["attachments"] as $file)
               {
                   echo "<a href='download_file.php?id={$file["id"]}'>{$file["basename"]}</a><br>";
               }
             ?>
         </span><br><br>
         <strong>Description</strong><br>
-        <span><?= $job_data["uj_info"]["description"] ?></span>
-
+        <span id="job-info-description"><?= $job_data["uj_info"]["description"] ?></span>
+        
+        <div class="col-lg-12"><br><br><br></div>
       </div>
       <div class="col-lg-7 bids-section">            
         <div class="col-lg-8">
@@ -189,7 +218,7 @@ $job_categories = Data::load_job_categories();
             <legend><h3><small>BIDS</small></h3></legend>
           </fieldset>
           <div class="row col-lg-12">
-            <div><strong><small><?= count($job_data["bids"]);  ?> bids</small></strong><br><br><br></div>
+            <div><span class="badge badge-blue"><?= count($job_data["bids"]);  ?> bids</span><br><br><br></div>
 
             <table class="table">              
               <tbody id="bids-listings">
@@ -200,30 +229,30 @@ $job_categories = Data::load_job_categories();
                 {                
                     echo "<tr dx='{$bid["id"]}'><td dx='{$bid["id"]}'>"
                     . "<div class='col-lg-2'><img src='{$bid["avatar"]}' style='width: 80px; height: auto'></div>"
-                    . "<div class='col-lg-10'><div class='col-lg-4'><span class='bid-user'>{$bid["names"]} <i class='fa fa-star' style='color:#FFD700;'></i>{$bid["reputation"]}</span></div><div class='col-lg-4'><i class='fa fa-fw fa-map-marker'></i><small>{$bid["location"]}</small></div>"
-                    . "<div class='col-lg-4'><span class='pull-right'>";
-                    if($bid["bidder"] == $me)
+                    . "<div class='col-lg-10'><div class='col-lg-5'><span class='bid-user'>{$bid["names"]}</span> <i class='fa fa-star' style='color:#FFD700;'></i> {$bid["reputation"]}</div><div class='col-lg-4'><i class='fa fa-fw fa-map-marker'></i><small>{$bid["location"]}</small></div>"
+                    . "<div class='col-lg-3'><span class='pull-right'>";
+                    if($bid["bidder"] == $me && $bid["awarded"] == 0)
                     {
                         echo "<a href='javascript:;' vec='bid-edit' dx='{$bid["id"]}'><i class='fa fa-fw fa-pencil'></i></a><a href='javascript:;' vec='bid-delete' dx='{$bid["id"]}'><i class='fa fa-fw fa-trash-o'></i></a>&nbsp;";
                     }
                     
-                    echo "<small><i class='fa fa-clock-o fa-fw'></i>".Jobs::time_gap($bid["stamp"])."</small></span></div><div class='col-lg-3'><i class='fa fa-fw fa-credit-card'></i> <small><span class='bid-amount'>{$bid["amount"]}</span> ";
+                    echo "<small><i class='fa fa-clock-o fa-fw'></i>".Jobs::time_gap($bid["stamp"])."</small></span></div><div class='col-lg-6'><i class='fa fa-fw fa-credit-card'></i> <small><span class='bid-amount'>{$bid["amount"]}</span> ";
                     if($bid["awarded"] == 1)
                     {
-                        echo "&nbsp;&nbsp;<span><i class='fa fa-fw fa-gift' style='color: #40E0D0;'></span>";
+                        echo "&nbsp;&nbsp;<span><i class='fa fa-fw fa-gift' style='color: #40E0D0;'></i>&nbsp;<span class='label label-info'>accepted</span></span>";
                     }
                     
-                    if($job_data["gen_info"]["me"]["is_owner"])
+                    else if($job_data["gen_info"]["me"]["is_owner"])
                     {
-                        echo "<br><a href='javascript:;' class='btn btn-xs btn-danger' vec='bid-accept' dx='1'>Accept</a></small>";
+                        echo "<br><a href='javascript:;' class='btn btn-xs btn-danger' vec='bid-accept' dx='{$bid["id"]}'>Accept</a></small>";
                     }                    
                     
-                    echo "</div></div>";                
+                    echo "</div><div class='col-lg-12'><br><span class='bid-comment'>{$bid["comment"]}</span></div></div>";                
                 
                 }
                 
                 
-                if(!$job_data["gen_info"]["me"]["has_bidded"])
+                if(!$job_data["gen_info"]["me"]["has_bidded"] && !$job_data["gen_info"]["job"]["has_bid_awarded"]  && !$job_data["gen_info"]["me"]["is_owner"])
                 {
                 ?>
                 <tr id="new_bid_tr">
@@ -281,10 +310,10 @@ $job_categories = Data::load_job_categories();
         
         ?>
         <fieldset><legend><small>Edit Job</small></legend></fieldset>
-        <button type="button" data-toggle="modal" data-target="#new_job_modal" class="btn btn-danger">Edit Job &nbsp;&nbsp;&nbsp;<i class="fa fa-fw fa-edit"></i></button><br><br>
+        <button type="button" id="open_edit_job" class="btn btn-danger">Edit Job &nbsp;&nbsp;&nbsp;<i class="fa fa-fw fa-edit"></i></button><br><br>
         <?php
             }
-            if(($job_data["gen_info"]["me"]["is_owner"] && !$job_data["gen_info"]["job"]["has_bid_awarded"]) || $job_data["uj_info"]["deadline"] > time())
+            if($job_data["gen_info"]["me"]["is_owner"] && (!$job_data["gen_info"]["job"]["has_bid_awarded"] || $job_data["uj_info"]["deadline"] < time()))
             {
         ?>        
         <fieldset><legend><small>Delete Job</small></legend></fieldset>        
@@ -329,7 +358,7 @@ $job_categories = Data::load_job_categories();
       </div>
 
       <!-- Modal -->
-      <div class="modal fade" id="new_job_modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"  data-backdrop="static" data-keyboard="false">
+      <div class="modal fade" id="edit_job_modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"  data-backdrop="static" data-keyboard="false">
         <div class="modal-dialog modal-lg" role="document">
           <div class="modal-content">
             <div class="modal-header">
@@ -340,20 +369,21 @@ $job_categories = Data::load_job_categories();
               <form id="job_edit_form" action="controller/update_job.php" method="post" enctype="multipart/form-data">              
                 <div class="form-group">
                   <label for="job_title">Summary <small>(30 chars)</small></label>
-                  <input type="text" class="form-control" name="job_title" id="job_title" placeholder="Very brief summary" required="">
+                  <input type="text" class="form-control" name="job_title" id="job_title" placeholder="Very brief summary" value="<?= $job_data["uj_info"]["title"] ?>" required="">
                 </div>
                 <div class="form-group">
                   <label for="job_desc">Complete description</label>
-                  <textarea class="form-control" id="job_desc" name="job_desc" placeholder="Be expansive about the job, project, task etc." required=""></textarea>                    
+                  <textarea class="form-control" id="job_desc" name="job_desc" placeholder="Be expansive about the job, project, task etc." required=""><?= $job_data["uj_info"]["description"] ?></textarea>                    
                 </div>
                 <div class="form-group">
                   <label for="job_criteria">Category</label>
                   <select class="form-control" id="job_category" name="job_category" required="">
-                    <option value="">Select Category</option>
-                    <option value="">Select Category</option>
+                    <option value="">Select Category</option>                    
                 <?php
                     foreach($job_categories as $cat)
                     {
+                        if($cat["name"] == "Other")
+                            continue;
                 ?>
                 <option value="<?= $cat["id"] ?>"><?= $cat["name"] ?></option>
                 <?php
@@ -368,7 +398,7 @@ $job_categories = Data::load_job_categories();
                   <input type="text" class="form-control" name="job_tags" id="job_tags" placeholder="e.g. Physics, CPA, C++, Pharmacy">
                 </div>
                 <div class="form-group">
-                  <strong>Attach Files</strong>&nbsp;&nbsp;<small>(if any) max <strong>25MB</strong> total</small>
+                  <strong>Attach More Files</strong>&nbsp;&nbsp;<small>(if any) max <strong>25MB</strong> total</small>
                   <div id="job_attach_files"></div>
                 </div>
                 <fieldset>
@@ -376,7 +406,7 @@ $job_categories = Data::load_job_categories();
                     <label>Pick date</label>
                     <div class="form-group">
                       <div class="input-group" style="width: 50%;">
-                        <input type="text" class="form-control" id="job_deadline" name="job_deadline">
+                        <input type="text" class="form-control" id="job_deadline" name="job_deadline" value="<?= date("d/m/Y", $job_data["uj_info"]["deadline"]) ?>">
                         <span class="input-group-addon"><i class="fa fa-fw fa-calendar"></i></span>
                       </div>
                     </div>                
@@ -388,7 +418,7 @@ $job_categories = Data::load_job_categories();
                       <label>Minimum</label>
                       <div class="input-group" style="width: 50%;">
                         <span class="input-group-addon">KSH</span>
-                        <input type="text" id="job_amount_min" name="job_amount_min" class="form-control" placeholder="Minimum amount" required="">
+                        <input type="text" id="job_amount_min" name="job_amount_min" class="form-control" placeholder="Minimum amount" value="<?= $job_data["uj_info"]["amount_min"] ?>" required="">
                         <span class="input-group-addon">.00</span>
                       </div>                  
                     </div>
@@ -396,7 +426,7 @@ $job_categories = Data::load_job_categories();
                       <label>Maximum</label>
                       <div class="input-group" style="width: 50%;">
                         <span class="input-group-addon">KSH</span>
-                        <input type="text" id="job_amount_max" name="job_amount_max" class="form-control" placeholder="Maximum amount" required="">
+                        <input type="text" id="job_amount_max" name="job_amount_max" class="form-control" placeholder="Maximum amount" value="<?= $job_data["uj_info"]["amount_max"] ?>" required="">
                         <span class="input-group-addon">.00</span>
                       </div>                  
                     </div>
@@ -410,7 +440,7 @@ $job_categories = Data::load_job_categories();
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-              <button type="button" class="btn btn-primary" id="sb_job_create_form">Submit</button>
+              <button type="button" class="btn btn-primary" id="sb_job_create_form">Save</button>
             </div>
           </div>
         </div>
@@ -565,16 +595,17 @@ $job_categories = Data::load_job_categories();
             var work_rating = 0
 
             var tomorrow = new Date()
-            tomorrow.setDate(tomorrow.getDate() + 1)
-            
+            tomorrow.setDate(tomorrow.getDate() + 1)         
+             
             var allowed_exts = "csv,xls,xlsx,txt,png,jpg,gif,bmp,avi,mpg,mpeg,mp4,mp3,wav,flv,pdf,doc,docx,ppt,pptx,psd,pub,7z,ppd,bz,bz2,ico,jar,phar,tex,latex,wma,wmx,wmv,mpga,mp4a,oda,oxt,ogx,oga,ogv,odb,rar,tar,xz,zip,gtar,tiff";
 
             $(function ()
             {
-
+                $("#job_category").val($("#job-info-category").html())                
+                                
                 $("#job_deadline").datepicker({zIndex: 1000000, autohide: true, startDate: tomorrow, format: 'dd/mm/yyyy'});
                 
-                $("#job_tags, #search_tags").tagsinput({
+                $("#job_tags").tagsinput({
                     tagClass: 'label label-info',
                     itemValue: function (item)
                     {
@@ -596,6 +627,14 @@ $job_categories = Data::load_job_categories();
                     }
                 })
                 
+                var tags_str = $("#tag-ids").html()                
+                var tag_ids = JSON.parse(tags_str)
+                
+                for(var j in tag_ids)
+                {
+                    $("#job_tags").tagsinput('add', tag_ids[j])
+                }
+                               
                 $("#job-upload-div").uploadFile(
                         {
                             url: "controller/job_sb_files_upload.php",
@@ -719,11 +758,10 @@ $job_categories = Data::load_job_categories();
 
                 $("[vec='bid-accept']").on("click", function ()
                 {
-                    var dx = $(this).attr("dx");
+                    var dx = $(this).attr("dx")
                     var bid_amount = $("td[dx='" + dx + "']").find("span.bid-amount").html()
                     var bid_user = $("td[dx='" + dx + "']").find("span.bid-user").html()
-
-
+                    
                     $("#bid-accept-usr").html(bid_user)
                     $("#bid-accept-amt").html(bid_amount)
 
@@ -777,9 +815,9 @@ $job_categories = Data::load_job_categories();
                             if(result == "ok")
                             {
                                 $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong>The job owner will inspect your work and get back to you soon<br><em>Just a minute&hellip;</em></div>')
-                                $(".feedback").show()
+                                $(".feedback").show()                              
                                 
-                                setTimeout(function(){ window.location="jobs.php"}, 1500)
+                                setTimeout(function(){ window.location.reload()}, 1500)
                             }
                             else
                             {
@@ -802,7 +840,7 @@ $job_categories = Data::load_job_categories();
                   {
                       if (response.responseText != "ok")
                           {
-                              $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+result+'</div>')
+                              $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+response.responseText+'</div>')
                               $(".feedback").show()
                           }
                       else
@@ -810,7 +848,7 @@ $job_categories = Data::load_job_categories();
                               $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong><br><em>Just a minute&hellip;</em></div>')
                               $(".feedback").show()
                                 
-                               setTimeout(function(){window.location="jobs.php"}, 1500)
+                               setTimeout(function(){window.location.reload()}, 1500)
                           }
                   }
               }
@@ -838,6 +876,8 @@ $job_categories = Data::load_job_categories();
                                 $("td[dx='"+dx+"']").find("span.bid-comment").html(cmt)
                                 $("td[dx='"+dx+"']").find("span.bid-amount").html(amt)
                                 
+                                $("#edit_bid_modal").modal('hide')
+                                
                             }
                             else
                             {
@@ -855,7 +895,8 @@ $job_categories = Data::load_job_categories();
                 
                 $("#delete-bid-sb").on("click", function()
                 {
-                   var dx = $(this).attr("dx")
+                    
+                    var dx = $(this).attr("dx")
                     
                     $.ajax({
                         url:"controller/delete_bid.php",
@@ -867,6 +908,8 @@ $job_categories = Data::load_job_categories();
                             {
                                 $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong><br>Your edits have been applied</div>')
                                 $(".feedback").show()
+                                
+                                $("#delete_bid_modal").modal('hide')
                                 
                                 $("td[dx='"+dx+"']").slideUp()                                                                
                             }
@@ -898,7 +941,9 @@ $job_categories = Data::load_job_categories();
                             if(result == "ok")
                             {
                                 $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong><br>Your edits have been applied</div>')
-                                $(".feedback").show()                                                               
+                                $(".feedback").show()
+                                
+                                $("#accept_bid_modal").modal('hide')
                             }
                             else
                             {
@@ -1041,7 +1086,10 @@ $job_categories = Data::load_job_categories();
                     })
                 })
                 
-                
+                $("#open_edit_job").on("click", function()
+                {
+                    $("#edit_job_modal").modal('show')
+                })
                 
             })
 

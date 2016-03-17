@@ -1,7 +1,7 @@
 <?php
     require_once 'neuro/db_setup.php';
 ?>
-
+<!DOCTYPE html>
 <html lang="en">
 
   <head>
