@@ -2,6 +2,8 @@
 
 require_once '../neuro/Jobs.php';
 
+session_start();
+
 $rating = filter_input(INPUT_POST, "rating", FILTER_VALIDATE_INT);
 if(!$rating)
 {

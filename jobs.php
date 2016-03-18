@@ -14,11 +14,16 @@ $job_id = filter_input(INPUT_GET, "job");
 if($job_id)
     $_SESSION["job_id"] = $job_id;
 
+
+Jobs::job_exists($_SESSION["job_id"]);
+
 Jobs::cleanup_tmp();
 
 $job_data = Jobs::loadInfo();
 $notifications = Data::load_notifications($_SESSION["sess_id"]);
 $job_categories = Data::load_job_categories();
+
+$me = Data::user_data($_SESSION["sess_id"]);
 
 ?>
 
@@ -62,17 +67,13 @@ $job_categories = Data::load_job_categories();
       {
           width: 100% !important;
       }
-      .feedback,#jobs-load
+      .feedback,.feedback2
       {
           position: absolute;
-          top: 250px;
-          left: 300px;
+          top: 50%;
+          left: 50%;
           z-index: 100000;
-      }
-      #jobs-load
-      {
-          opacity: 0.6;
-      }
+      }      
       #search_bar_txt
       {
           font-size: 16px;
@@ -92,7 +93,7 @@ $job_categories = Data::load_job_categories();
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="javascript:">Kim &nbsp;<i class="fa fa-fw fa-home" style="color: #337AB7;"></i></a>
+      <a class="navbar-brand" href="home.php"><?= $me["names"] ?> &nbsp;<i class="fa fa-fw fa-home" style="color: #337AB7;"></i></a>
     </div>        
 
     <ul class="nav navbar-top-links navbar-right">
@@ -113,7 +114,7 @@ $job_categories = Data::load_job_categories();
                 if(!$notif["is_read"])
                     $class="unread_notif";
                 
-                echo '<li class="'.$class.'">a href="javascript:;">'.$intro.'</a></li>';
+                echo '<li class="'.$class.'"><a href="javascript:;">'.$intro.'</a></li>';
             }
             
             ?>
@@ -196,7 +197,11 @@ $job_categories = Data::load_job_categories();
               
               foreach($job_data["attachments"] as $file)
               {
-                  echo "<a href='download_file.php?id={$file["id"]}'>{$file["basename"]}</a><br>";
+                  $filename = pathinfo($file["basename"], PATHINFO_FILENAME);
+                  $ext = pathinfo($file["basename"], PATHINFO_EXTENSION);
+                  $nice_name = substr($filename, 0, strrpos($filename, "_")).$ext;
+                  
+                  echo "<a href='download_file.php?mode=1&id={$file["id"]}'>{$nice_name}</a><br>";
               }
             ?>
         </span><br><br>
@@ -328,7 +333,7 @@ $job_categories = Data::load_job_categories();
         <button type="button" class="btn btn-primary" id="upload_sb_work">Upload &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i class="fa fa-fw fa-upload"></i></button><br><br>
         <?php
             }
-            if($job_data["gen_info"]["me"]["is_owner"] && $job_data["uj_info"]["status"] == 3)
+            if(($job_data["gen_info"]["me"]["is_owner"] || $job_data["gen_info"]["me"]["my_bid_awarded"]) && $job_data["uj_info"]["status"] == 3)
             {
         ?>
         <fieldset><legend><small>submitted work</small></legend></fieldset>
@@ -336,10 +341,17 @@ $job_categories = Data::load_job_categories();
           <thead>File</thead>
           <tbody>
         <?php
-            foreach($job_data["sb_files"] as $file)
-            {
-                echo "<tr><td><a href='download_file.php?id=".$file["id"]."'>{$file["basename"]}</a></td></tr>";
+                foreach($job_data["sb_files"] as $file)
+                {
+                    $filename = pathinfo($file["basename"], PATHINFO_FILENAME);
+                    $ext = pathinfo($file["basename"], PATHINFO_EXTENSION);
+                    $nice_name = substr($filename, 0, strrpos($filename, "_")).$ext;
+                    
+                    echo "<tr><td><a href='download_file.php?mode=2&id=".$file["id"]."'>{$nice_name}</a></td></tr>";
+                }
             }
+            if($job_data["gen_info"]["me"]["is_owner"] && $job_data["uj_info"]["status"] == 3)
+            {
         ?>
           </tbody>
         </table>
@@ -434,7 +446,8 @@ $job_categories = Data::load_job_categories();
 
               </form>
 
-              <form class="feedback" style="display: none;">
+              <form class="feedback2" style="display: none;">
+                <div class="alert alert-info">hello</div>
               </form>
 
             </div>
@@ -486,7 +499,7 @@ $job_categories = Data::load_job_categories();
               <h4 class="modal-title"><i class="fa fa-fw fa-trash-o"></i>&nbsp;Delete bid</h4>
             </div>
             <div class="modal-body">
-              <p>Are you sure you want to delete your bid to this Job?</p>
+              <p>Are you sure you want to delete your bid to this bid?</p>
             </div>
             <div class="modal-footer">
               <span id="delete-bid-loading-gif"></span>
@@ -508,7 +521,7 @@ $job_categories = Data::load_job_categories();
               <p>Are you sure you want to delete this job?</p>
             </div>
             <div class="modal-footer">
-              <span id="delete-bid-loading-gif"></span>
+              <span id="delete-job-loading-gif"></span>
               <button type="button" class="btn btn-danger" id="delete-job-conf">Delete</button>
               <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
             </div>
@@ -577,6 +590,10 @@ $job_categories = Data::load_job_categories();
     </div>
   </div>
 </div>
+      
+      <div class="feedback" style="display: none">
+        <div class="alert alert-info">wassup</div>
+      </div>
 
 
       <script src="jquery/jquery-1.10.2.min.js"></script>
@@ -735,7 +752,6 @@ $job_categories = Data::load_job_categories();
                                     }
                             }
                         })
-
                 
                 $("[vec='bid-edit']").on("click", function ()
                 {
@@ -776,6 +792,8 @@ $job_categories = Data::load_job_categories();
                     
                     var verdict
                     var rate_reaction = $("<div id='rate-reaction'></div>")
+                    
+                    work_rating = vote
                     
                     switch(vote)
                     {
@@ -840,13 +858,13 @@ $job_categories = Data::load_job_categories();
                   {
                       if (response.responseText != "ok")
                           {
-                              $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+response.responseText+'</div>')
-                              $(".feedback").show()
+                              $(".feedback2").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+response.responseText+'</div>')
+                              $(".feedback2").show()
                           }
                       else
                           {
-                              $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong><br><em>Just a minute&hellip;</em></div>')
-                              $(".feedback").show()
+                              $(".feedback2").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong><br><em>Just a minute&hellip;</em></div>')
+                              $(".feedback2").show()
                                 
                                setTimeout(function(){window.location.reload()}, 1500)
                           }
@@ -861,6 +879,8 @@ $job_categories = Data::load_job_categories();
                     var amt = $(".edit-bid-amount").val()
                     var dx = $(this).attr("dx")
                     
+                    $("#edit-bid-loading-gif").html("<img src='img/jx/loading5.gif'>")
+                    
                     $.ajax({
                         url:"controller/edit_bid.php",
                         type:"POST",
@@ -868,6 +888,7 @@ $job_categories = Data::load_job_categories();
                         data:{cmt:cmt, amt:amt},
                         success:function(result)
                         {
+                            $("#edit-bid-loading-gif").empty()
                             if(result == "ok")
                             {
                                 $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong><br>Your edits have been applied</div>')
@@ -887,6 +908,7 @@ $job_categories = Data::load_job_categories();
                         },
                         error:function()
                         {
+                            $("#edit-bid-loading-gif").empty()
                             $(".feedback").html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Oops:</strong> Lost Connection</div>')
                             $(".feedback").show()
                         }
@@ -897,6 +919,7 @@ $job_categories = Data::load_job_categories();
                 {
                     
                     var dx = $(this).attr("dx")
+                    $("#delete-bid-loading-gif").html("<img src='img/jx/loading5.gif'>")
                     
                     $.ajax({
                         url:"controller/delete_bid.php",
@@ -904,6 +927,7 @@ $job_categories = Data::load_job_categories();
                         async:true,
                         success:function(result)
                         {
+                            $("#delete-bid-loading-gif").empty()
                             if(result == "ok")
                             {
                                 $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong><br>Your edits have been applied</div>')
@@ -921,6 +945,7 @@ $job_categories = Data::load_job_categories();
                         },
                         error:function()
                         {
+                            $("#delete-bid-loading-gif").empty()
                             $(".feedback").html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Oops:</strong> Lost Connection</div>')
                             $(".feedback").show()
                         }
@@ -931,6 +956,8 @@ $job_categories = Data::load_job_categories();
                 {
                     var dx = $(this).attr("dx")
                     
+                    $("#accept-bid-loading-gif").html("<img src='img/jx/loading5.gif'>")
+                    
                     $.ajax({
                         url:"controller/bid_accept.php",
                         type:"POST",
@@ -938,6 +965,7 @@ $job_categories = Data::load_job_categories();
                         data:{dx:dx},
                         success:function(result)
                         {
+                            $("#accept-bid-loading-gif").empty()
                             if(result == "ok")
                             {
                                 $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong><br>Your edits have been applied</div>')
@@ -953,6 +981,7 @@ $job_categories = Data::load_job_categories();
                         },
                         error:function()
                         {
+                            $("#accept-bid-loading-gif").empty()
                             $(".feedback").html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Oops:</strong> Lost Connection</div>')
                             $(".feedback").show()
                         }
@@ -960,13 +989,18 @@ $job_categories = Data::load_job_categories();
                 })
                 
                 $("#delete-job-conf").on("click", function()
-                {                    
-                    $.ajax({
+                {
+                    $("#delete-job-loading-gif").html("<img src='img/jx/loading5.gif'>")
+                    
+                      $.ajax({
                         url:"controller/delete_job.php",
                         type:"POST",
                         async:true,
                         success:function(result)
                         {
+                            $("#delete-job-loading-gif").empty()
+                            $("#delete_job_modal").modal('hide')
+                            
                             if(result == "ok")
                             {
                                 $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong><br><em>Just a moment&hellip;</em></div>')
@@ -982,16 +1016,19 @@ $job_categories = Data::load_job_categories();
                         },
                         error:function()
                         {
+                            $("#delete-job-loading-gif").empty()
+                            $("#delete_job_modal").modal('hide')
+                            
                             $(".feedback").html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Oops:</strong> Lost Connection</div>')
                             $(".feedback").show()
                         }
                     })
                 })
                 
-                $("#reopen_job").on("click", function()
+                $("body").delegate("#reopen_job","click", function()
                 {                    
                     $.ajax({
-                        url:"controller/delete_job.php",
+                        url:"controller/reopen_job.php",
                         type:"POST",
                         async:true,
                         data:{rating:work_rating},
@@ -1018,10 +1055,10 @@ $job_categories = Data::load_job_categories();
                     })
                 })
                 
-                $("#close_job").on("click", function()
-                {                    
+                $("body").delegate("#close_job", "click", function()
+                { 
                     $.ajax({
-                        url:"controller/delete_job.php",
+                        url:"controller/close_job.php",
                         type:"POST",
                         async:true,
                         data:{rating:work_rating},

@@ -75,6 +75,20 @@ class Data
         $mysqli->query("UPDATE notifications SET is_read=1 WHERE user_id={$user_id}")
                 or die($mysqli->error." ".__FILE__." line ".__LINE__);
     }
-            
+    
+    public static function user_data($user_id)
+    {
+        global $mysqli;
+        
+        $res = $mysqli->query("SELECT * FROM users WHERE id={$user_id}")
+                    or die($mysqli->error." ".__FILE__." line ".__LINE__);
+        
+        $user = $res->fetch_assoc();
+        
+        $res->close();
+        
+        return $user;
+    }
+    
 }
 
