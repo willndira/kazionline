@@ -197,7 +197,24 @@ class Jobs
 
         return $auth;
     }
-
+    
+    public static function job_exists($job_id)
+    {
+        global $mysqli;
+        
+        $res = $mysqli->query("SELECT id FROM jobs WHERE id={$job_id}") 
+                    or die($mysqli->error." ".__FILE__." line ".__LINE__);
+        
+        $found = 0;
+        if($res->num_rows)
+            $found = 1;
+        
+        $res->close();
+        
+        if(!$found)
+            header("Location:home.php");        
+    }
+    
     public static function newJob($title, $desc, $category, $tags, $deadline, $min_budget, $max_budget)
     {
         global $mysqli;
@@ -515,16 +532,21 @@ class Jobs
         $mysqli->query("DELETE FROM job_bids WHERE job_id={$job_id}") or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
         $mysqli->query("DELETE FROM used_job_tags WHERE job_id={$job_id}") or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
 
-        $res_f = $mysqli->query("SELECT file_path FROM job_attachments WHERE job_id={$job_id}") or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
+        $res_f = $mysqli->query("SELECT file_path FROM job_attachments WHERE job_id={$job_id} "
+        . "UNION ALL SELECT file_path FROM jobsb_files WHERE job_id={$job_id}") or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
 
         while ($file = $res_f->fetch_assoc())
         {
-            unlink($file["file_path"]);
+            unlink(__DIR__."/../".$file["file_path"]);
         }
 
         $res_f->close();
 
         $mysqli->query("DELETE FROM job_attachments WHERE job_id={$job_id}") or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
+        
+        $mysqli->query("DELETE FROM jobsb_files WHERE job_id={$job_id}") or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
+        
+        $mysqli->query("DELETE FROM jobs WHERE id={$job_id}") or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
 
         return "ok";
     }
@@ -533,7 +555,7 @@ class Jobs
     {
         global $mysqli;
         
-        if(!self::auth_bid($_SESSION["job_id"], $_SESSION["sess_id"]))
+        if(!self::auth_job($_SESSION["job_id"], $_SESSION["sess_id"]))
         {
             return "You don't own this job";
         }
@@ -550,16 +572,17 @@ class Jobs
         
         //move the cash
         $sql = "UPDATE users u INNER JOIN job_bids jb ON jb.user_id=u.id "
-                . "SET u.balance = u.balance + (jb.amount * 0.9) WHERE jb.job_id={$job_id} AND jb.awarded=1";
+                . "SET u.balance = u.balance + (jb.amount * 0.9), u.total_transacted = u.total_transacted + (jd.amount * 0.9) "
+                . "WHERE jb.job_id={$job_id} AND jb.awarded=1";
         
         $mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);
         
         //send notification to bidder
         
-        $new_amt = $bid["amount"] * 0.9;
+        $new_amt = $bid["bid"] * 0.9;
         $ttl = self::get_20chartitle_deadline();
         
-        $notif = "Payment received! The owner of job '{$ttl["title"]}' rated your services {$rating}/5. You receive KSH {$new_amt} "
+        $notif = "Payment received! The owner of job {$ttl["title"]} rated your services {$rating}/5. You receive KSH {$new_amt} "
         . "after 10% service fee deduction. You earned {$bid["points"]} reputation points";
         
         $mysqli->query("INSERT INTO notifications (user_id, msg) VALUES ({$bid["bid"]["user_id"]}, '{$notif}')")
@@ -573,13 +596,13 @@ class Jobs
     {
         global $mysqli;
         
-        $user_id = $_SESSION["user_id"];
+        $user_id = $_SESSION["sess_id"];
         $job_id = $_SESSION["job_id"];
         
-        if(self::auth_bid_award($job_id, $user_id))
+        if(!self::auth_bid_award($job_id, $user_id))
             return "You were not awarded bid to this job";
         
-        if(count($_SESSION["tmp_jobsb_files"]))
+        if(count($_SESSION["tmp_jobsb_files"]) == 0)
             return "You have not attached any files";
         
         $mysqli->query("UPDATE jobs SET status=3 WHERE id={$job_id}") or die($mysqli->error." ".__FILE__." line ".__LINE__);
@@ -590,7 +613,7 @@ class Jobs
         
         $owner = self::get_job_owner();
         $ttl = self::get_20chartitle_deadline();
-        $notif = "Submitted work! The successful bidder for job '{$ttl["title"]}' has uploaded his work. Please inspect his work and rate "
+        $notif = "Submitted work! The successful bidder for job {$ttl["title"]} has uploaded his work. Please inspect his work and rate "
         . "the rate the output received";
         
         $mysqli->query("INSERT INTO notifications (user_id, msg) VALUES ({$owner}, '{$notif}')")
@@ -765,7 +788,7 @@ class Jobs
                 or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
         
         
-        if ($res_b->num_rows)
+        if (!$res_b->num_rows)
         {
             $res_b->close();
             return "You do not have enough money in your account. KSH {$bid_inf["amount"]} needs to be deducted ";
@@ -839,7 +862,7 @@ class Jobs
         
         $ttl = self::get_20chartitle_deadline();
         
-        $notif = "We're a sorry! The owner of job '{$ttl["title"]}' rated your services {$rating}/5 and deemed your work not good enough. "
+        $notif = "We're a sorry! The owner of job {$ttl["title"]} rated your services {$rating}/5 and deemed your work not good enough. "
         . "The owner reopened the job to other bidders. You earned {$bid["points"]} reputation points";
         
         $mysqli->query("INSERT INTO notifications (user_id, msg) VALUES ({$bid["bid"]["user_id"]}, '{$notif}')")
@@ -949,7 +972,7 @@ class Jobs
         
         while($sb = $res_sb->fetch_assoc())
         {
-            $sb_files[] = ["id"=>$sb["id"], "basename"=>pathinfo($sb["filepath"], PATHINFO_BASENAME)];
+            $sb_files[] = ["id"=>$sb["id"], "basename"=>pathinfo($sb["file_path"], PATHINFO_BASENAME)];
         }
         
         $sql = "SELECT u.id bidder, u.location, u.names, u.avatar, u.reputation, b.id, b.amount, b.awarded, b.comment, UNIX_TIMESTAMP(b.stamp) stamp FROM job_bids b "
@@ -1039,6 +1062,46 @@ class Jobs
         $title = strlen($data["title"]) > 20 ? substr($data["title"], 0, 20)."&hellip;":$data["title"];
         
         return ["title"=>$title, "deadline"=>$data["deadline"]];
-    }
+    }    
     
+    public static function prepare_file_download($mode, $id)
+    {
+        global $mysqli;
+        
+        $table_name = "";
+        $e404 = FALSE;
+        $file_path = "";
+        
+        if(!Security::check_empty([$mode, $id]))
+        {
+            return ["404"=>TRUE, "file_path"=>""];
+        }
+        
+        if($mode == 1)
+            $table_name = "job_attachments";
+        else if($mode == 2)
+            $table_name = "jobsb_files";
+        else
+            $e404 = TRUE;
+        
+        //check auth for sb files
+        
+        if(!self::auth_job($_SESSION["job_id"], $_SESSION["sess_id"]) && !self::auth_bid_award($_SESSION["job_id"], $_SESSION["sess_id"]) && $mode == 2)
+                $e404 = TRUE;
+        
+        $res_check = $mysqli->query("SELECT file_path FROM {$table_name} WHERE id={$id} AND "
+                . "job_id={$_SESSION["job_id"]}") or die($mysqli->error." ".__FILE__." line ".__LINE__);
+    
+        if(!$res_check->num_rows)
+            $e404 = TRUE;
+        else
+        {
+            $file = $res_check->fetch_assoc();
+            $file_path = $file["file_path"];
+        }
+    
+        $res_check->close();
+        
+        return ["404"=>$e404, "file_path"=>$file_path];        
+    }
 }

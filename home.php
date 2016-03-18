@@ -9,6 +9,8 @@ $jobs_data = Jobs::loadJobs();
 $docket = Jobs::loadDocket($_SESSION["sess_id"]);
 $notifications = Data::load_notifications($_SESSION["sess_id"]);
 $job_categories = Data::load_job_categories();
+
+$me = Data::user_data($_SESSION["sess_id"]);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -83,7 +85,7 @@ $job_categories = Data::load_job_categories();
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="javascript:">Kim &nbsp;<i class="fa fa-fw fa-home" style="color: #337AB7;"></i></a>
+      <a class="navbar-brand" href="javascript:"><?= $me["names"] ?> &nbsp;<i class="fa fa-fw fa-home" style="color: #337AB7;"></i></a>
     </div>        
 
     <ul class="nav navbar-top-links navbar-right">
@@ -91,7 +93,7 @@ $job_categories = Data::load_job_categories();
         <a class="dropdown-toggle navlink" data-toggle="dropdown" href="#">
           <i class="fa fa-bell fa-fw"></i>
           <?php
-          if(count($notifications["notifications"]) > 0)
+          if($notifications["unread"] > 0)
               echo " (".$notifications["unread"].") ";
           ?>
           <i class="fa fa-caret-down"></i>
@@ -109,7 +111,7 @@ $job_categories = Data::load_job_categories();
                 if(!$notif["is_read"])
                     $class="unread_notif";
                 
-                echo '<li class="'.$class.'">a href="javascript:;">'.$intro.'</a></li>';
+                echo '<li class="'.$class.'"><a href="javascript:;">'.$intro.'</a></li>';
             }
             
             ?>
@@ -163,7 +165,7 @@ $job_categories = Data::load_job_categories();
           <div class="list-group">
             <?php
                 if(count($docket["todo"]) == 0)
-                    echo '<a href="#" class="list-group-item">Nothing here </a>';
+                    echo '<a href="javascript:;" class="list-group-item">Nothing here </a>';
                 
                 foreach($docket["todo"] as $todo)
                 {
@@ -184,7 +186,7 @@ $job_categories = Data::load_job_categories();
           <div class="list-group">
               <?php
                 if(count($docket["docket"]) == 0)
-                    echo '<a href="#" class="list-group-item">Nothing here </a>';
+                    echo '<a href="javascript:;" class="list-group-item">Nothing here </a>';
                 
                 foreach($docket["docket"] as $dock)
                 {
@@ -386,11 +388,11 @@ $job_categories = Data::load_job_categories();
            <div class="col-lg-10">
               <h4><?= $intro ?></h4>
             </div>
-            <div class="col-lg-2"><small><?= $notif["time"] ?></small></div>
+          <div class="col-lg-2"><small><i class="fa fa-fw fa-clock-o"></i> <?= $notif["time"] ?></small></div>
             <div class="col-lg-10">
                 <?= $info ?>
             </div>
-        <div class="col-lg-12"><hr></div>
+            <div class="col-lg-12"></div>
         </div>
         <?php
             }
