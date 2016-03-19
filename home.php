@@ -132,15 +132,15 @@ $me = Data::user_data($_SESSION["sess_id"]);
           <li><a href="#"><i class="fa fa-user fa-fw"></i> User Profile</a>
           </li>
           <li class="divider"></li>
-          <li><a href="#"><i class="fa fa-gear fa-fw"></i>About Us</a>
+          <li><a href="about.php#about"><i class="fa fa-gear fa-fw"></i>About Us</a>
           </li>
-          <li><a href="#"><i class="fa fa-gear fa-fw"></i>Contact Us</a>
-          </li>
-          <li class="divider"></li>
-          <li><a href="#"><i class="fa fa-gear fa-fw"></i>Help</a>
+          <li><a href="about.php#contact"><i class="fa fa-gear fa-fw"></i>Contact Us</a>
           </li>
           <li class="divider"></li>
-          <li><a href="#"><i class="fa fa-gear fa-fw"></i>Terms &amp; Conditions</a>
+          <li><a href="help.php#faq"><i class="fa fa-gear fa-fw"></i>FAQs</a>
+          </li>
+          <li class="divider"></li>
+          <li><a href="help.php#terms"><i class="fa fa-gear fa-fw"></i>Terms &amp; Conditions</a>
           </li>
           <li class="divider"></li>
           <li><a href="logout.php"><i class="fa fa-sign-out fa-fw"></i> Logout</a>

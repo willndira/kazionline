@@ -90,5 +90,36 @@ class Data
         return $user;
     }
     
+    public static function abt_usr_mg($names, $email, $message)
+    {        
+        if(!Security::check_empty([$names, $email, $message]))
+        {
+            return "Please fill in all fields";
+        }
+        
+        if(!Security::check_email($email))
+        {
+            return "The email isn't valid";
+        }
+        
+        
+        $to = "info@kazionline.co.ke";
+        $subject = "User feedback";
+        $headers = "From: {$email}";
+        
+        mail($to, $subject, $message, $headers);
+        
+        $message="Dear {$names},\nThank you for taking your time to get back to us.\nWe will read your message and someone "
+        . "from our team will get back to you personally if necessary.\n\nKind Regards,\nKaziOnline Team";
+        $subject = "We just got your message";
+        $to = $email;
+        $headers = "From: info@kazionline.co.ke";
+        
+        mail($to, $subject, $message, $headers);
+        
+        return "ok";                
+    }
+    
+    
 }
 

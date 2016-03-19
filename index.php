@@ -59,12 +59,15 @@
               <i class="fa fa-user fa-fw"></i>  <i class="fa fa-caret-down"></i>
             </a>
             <ul class="dropdown-menu dropdown-user">
-              <li><a href="#"><i class="fa fa-user fa-fw"></i>About Us</a>
+              <li><a href="about.php#about"><i class="fa fa-user fa-fw"></i>About Us</a>
               </li>
-              <li><a href="#"><i class="fa fa-gear fa-fw"></i>FAQs</a>
+              <li><a href="about.php#contact"><i class="fa fa-user fa-fw"></i>Contact Us</a>
               </li>
               <li class="divider"></li>
-              <li><a href="#"><i class="fa fa-sign-out fa-fw"></i>Terms &amp; Conditions</a>
+              <li><a href="help.php#faq"><i class="fa fa-gear fa-fw"></i>FAQs</a>
+              </li>
+              <li class="divider"></li>
+              <li><a href="help.php#terms"><i class="fa fa-sign-out fa-fw"></i>Terms &amp; Conditions</a>
               </li>
             </ul>            
           </li>          
@@ -139,7 +142,7 @@
                   </div>
                   <div class="form-group">
                     <div class="col-sm-10 col-lg-12">
-                      <p>Sign Up <strong><u>only if</u></strong> you accept our <a href="javascript:">Terms &amp; Conditions</a></p>
+                      <p>Sign Up <strong><u>only if</u></strong> you accept our <a href="help.php#terms">Terms &amp; Conditions</a></p>
                     </div>
                   </div>
                   <div class="form-group">
