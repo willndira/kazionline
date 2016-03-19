@@ -388,14 +388,14 @@ class Jobs
                 $pagination_nav.='<li><a href="javascript:;" dx="'.$i.'">' . $i . '</a></li>';
         }
 
-        if ($highest == 0 || $highest == $page)
+        if ($highest - $page <= 4)
         {
             $last = '<li class="disabled"><a href="javascript:;">Last</a></li>';
             $raquo = '<li class="disabled"><a href="javascript:;" aria-label="Next"><span aria-hidden="true">&raquo;</span></a></li>';
         } else
         {
             $last = '<li><a href="javascript:;" dx="' . $highest . '">Last</a></li>';
-            $raquo = '<li class="disabled"><a href="javascript:;" aria-label="Next" dx="' . ($page + 1) . '"><span aria-hidden="true">&raquo;</span></a></li>';
+            $raquo = '<li><a href="javascript:;" aria-label="Next" dx="' . ($page + 1) . '"><span aria-hidden="true">&raquo;</span></a></li>';
         }
 
         $pagination_nav.=$raquo;
