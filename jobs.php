@@ -1,1135 +1,945 @@
-<?php
-require_once 'neuro/Jobs.php';
-require_once 'neuro/Data.php';
-require_once 'neuro/security.php';
-
-session_start();
-
-Security::check_session(TRUE);
-
-$me = $_SESSION["sess_id"];
-
-$job_id = filter_input(INPUT_GET, "job");
-
-if($job_id)
-    $_SESSION["job_id"] = $job_id;
-
-
-Jobs::job_exists($_SESSION["job_id"]);
-
-Jobs::cleanup_tmp();
-
-$job_data = Jobs::loadInfo();
-$notifications = Data::load_notifications($_SESSION["sess_id"]);
-$job_categories = Data::load_job_categories();
-
-$me = Data::user_data($_SESSION["sess_id"]);
-
-?>
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="no-js">
+  <!-- BEGIN HEAD -->
   <head>
-
     <meta charset="utf-8">
+    <title>Metronic | Admin Dashboard Template</title>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="">
-    <meta name="author" content="">
-
-    <title><?= $job_data["uj_info"]["title"] ?></title>
-
-    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">     
-    <link href="bootstrap/css/timeline.css" rel="stylesheet">    
-    <link href="bootstrap/css/dashboard_custom.css" rel="stylesheet">
-    <link href="bootstrap/css/bootstrap-tagsinput.css" rel="stylesheet"> 
-    <link href="font-awesome/css/font-awesome.min.css" rel="stylesheet">
-    <link href="jquery/css/datepicker.css" rel="stylesheet">
-    <link href="jquery/css/uploadfile.css" rel="stylesheet">
-    <link href="jquery/css/rating.css" rel="stylesheet">
-    <style>
-
-      .white-bg
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <meta content="" name="description">
+    <meta content="" name="author">
+    <!-- BEGIN GLOBAL MANDATORY STYLES -->
+    <link href="http://fonts.googleapis.com/css?family=Open+Sans:400,300,600,700&amp;subset=all" rel="stylesheet" type="text/css">
+    <link href="metronic/global/plugins/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link href="metronic/global/plugins/simple-line-icons/simple-line-icons.min.css" rel="stylesheet" type="text/css">
+    <link href="metronic/global/plugins/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <link href="metronic/global/plugins/uniform/css/uniform.default.css" rel="stylesheet" type="text/css">
+    <link href="metronic/global/plugins/bootstrap-switch/css/bootstrap-switch.min.css" rel="stylesheet" type="text/css">
+    <!-- END GLOBAL MANDATORY STYLES -->
+    <!-- BEGIN PAGE LEVEL PLUGIN STYLES -->
+    <link href="metronic/global/plugins/bootstrap-daterangepicker/daterangepicker-bs3.css" rel="stylesheet" type="text/css">
+    <link href="metronic/global/plugins/fullcalendar/fullcalendar.min.css" rel="stylesheet" type="text/css">
+    <link href="metronic/global/plugins/jqvmap/jqvmap/jqvmap.css" rel="stylesheet" type="text/css">
+    <!-- END PAGE LEVEL PLUGIN STYLES -->
+    <!-- BEGIN PAGE STYLES -->
+    <link href="metronic/admin/pages/css/tasks.css" rel="stylesheet" type="text/css">
+    <!-- END PAGE STYLES -->
+    <!-- BEGIN THEME STYLES -->
+    <!-- DOC: To use 'rounded corners' style just load 'components-rounded.css' stylesheet instead of 'components.css' in the below style tag -->
+    <link href="metronic/global/css/components.css" id="style_components" rel="stylesheet" type="text/css">
+    <link href="metronic/global/css/plugins.css" rel="stylesheet" type="text/css">
+    <link href="metronic/admin/layout/css/layout.css" rel="stylesheet" type="text/css">
+    <link href="metronic/admin/layout/css/themes/light.css" rel="stylesheet" type="text/css" id="style_color">
+    <link href="metronic/admin/layout/css/custom.css" rel="stylesheet" type="text/css">
+    <!-- END THEME STYLES -->
+    <link rel="shortcut icon" href="favicon.ico">
+    <style type="text/css">
+      .category-list
       {
-          background-color: #ffffff;
+          list-style-type: none;
+          font-size: 13.5px; 
+          line-height: 220%;
       }
-      .badge-blue
+      .category-side
       {
-          background-color: #0066ff;
-      }  
-
-      .bids-section
-      {
-          border-left: #d8d5d5 1px solid;
-          border-right: 1px #d8d5d5 solid;
+          border-right: #dbdbdc 1px solid;
       }
-      .bootstrap-tagsinput 
+      .job-main-link
       {
-          width: 100% !important;
+          font-size: 15px;
       }
-      .feedback,.feedback2
-      {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          z-index: 100000;
-      }      
-      #search_bar_txt
-      {
-          font-size: 16px;
-          font-weight: 600;
-      }
-
+      
     </style>
-
   </head>
-
-  <!-- Navigation -->
-  <nav class="navbar navbar-inverse navbar-static-top" role="navigation" style="margin-bottom: 0">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="home.php"><?= $me["names"] ?> &nbsp;<i class="fa fa-fw fa-home" style="color: #337AB7;"></i></a>
-    </div>        
-
-    <ul class="nav navbar-top-links navbar-right">
-      <li class="dropdown">
-        <a class="dropdown-toggle navlink" data-toggle="dropdown" href="#">
-          <i class="fa fa-bell fa-fw"></i>  <i class="fa fa-caret-down"></i>
-        </a>
-        <ul class="dropdown-menu dropdown-alerts">
-            <?php
-            if(count($notifications["notifications"]) == 0)
-             echo '<li><a href="javascript:;">No new notifications</a></li>';
-            
-            foreach(array_slice($notifications["notifications"], 0, 3) as $notif)
-            {
-                $intro = substr($notif["msg"], 0, strpos($notif["msg"], "!"));
-                $class="";
-                
-                if(!$notif["is_read"])
-                    $class="unread_notif";
-                
-                echo '<li class="'.$class.'"><a href="javascript:;">'.$intro.'</a></li>';
-            }
-            
-            ?>
-          <li>
-            <a class="text-center" href="javascript:;" id="see_all_notifs">
-              <strong>See Notifications</strong>
-              <i class="fa fa-angle-right"></i>
-            </a>
-          </li>
-        </ul>            
-      </li>
-
-      <li class="dropdown">
-        <a class="dropdown-toggle navlink" data-toggle="dropdown" href="#">
-          <i class="fa fa-user fa-fw"></i>  <i class="fa fa-caret-down"></i>
-        </a>
-        <ul class="dropdown-menu dropdown-user">
-          <li><a href="#"><i class="fa fa-user fa-fw"></i> User Profile</a>
-          </li>
-          <li class="divider"></li>
-          <li><a href="#"><i class="fa fa-gear fa-fw"></i>About Us</a>
-          </li>
-          <li><a href="#"><i class="fa fa-gear fa-fw"></i>Contact Us</a>
-          </li>
-          <li class="divider"></li>
-          <li><a href="#"><i class="fa fa-gear fa-fw"></i>Help</a>
-          </li>
-          <li class="divider"></li>
-          <li><a href="#"><i class="fa fa-gear fa-fw"></i>Terms &amp; Conditions</a>
-          </li>
-          <li class="divider"></li>
-          <li><a href="logout.php"><i class="fa fa-sign-out fa-fw"></i> Logout</a>
-          </li>
-        </ul>
-        <!-- /.dropdown-user -->
-      </li>
-      <!-- /.dropdown -->
-    </ul>
-
-  </nav>
-
-  <div id="page-container">
-
-    <div class="col-lg-12 white-bg data-container">
-      <br><br>
-      <div class="col-lg-3">            
-        <h3><small>CREATOR</small></h3>
-
-        <div class="row"><br>
-          <div class="col-lg-4"><img src="<?= $job_data["uj_info"]["avatar"] ?>" style="height: 100px; width: auto;"></div>
-          <div class="col-lg-8"><?= $job_data["uj_info"]["names"] ?><br><i class="fa fa-fw fa-map-marker"></i><small><?= $job_data["uj_info"]["location"] ?></small></div></div>
-        <br>
-        <h3><small>JOB INFO</small></h3>
-        <strong>Brief</strong><br>
-        <span id="job-info-brief"><?= $job_data["uj_info"]["title"] ?></span><br><br>
-        <strong>Category</strong><br>
-        <span><?= $job_data["uj_info"]["category"] ?></span><br><br>
-        <span id="job-info-category" style="display: none"><?= $job_data["uj_info"]["cat_id"] ?></span>
-        <strong>Tags</strong><br>
-        <span>
-        <?php
-            $tags_names = [];
-            
-            foreach($job_data["tags"] as $tag)
-            {
-                $tag_names[] = $tag["name"];                
-            }
-            
-            echo implode(",", $tag_names);
-        ?>
-        </span>
-        <span id="tag-ids" style="display:none;"><?= json_encode($job_data["tags"]) ?></span>
-        <br><br>
-        <strong>Attachments</strong><br>
-        <span>
-            <?php
-              
-              if(count($job_data["attachments"]) == 0)
-                  echo "No files attached";
-              
-              foreach($job_data["attachments"] as $file)
-              {
-                  $filename = pathinfo($file["basename"], PATHINFO_FILENAME);
-                  $ext = pathinfo($file["basename"], PATHINFO_EXTENSION);
-                  $nice_name = substr($filename, 0, strrpos($filename, "_")).$ext;
-                  
-                  echo "<a href='download_file.php?mode=1&id={$file["id"]}'>{$nice_name}</a><br>";
-              }
-            ?>
-        </span><br><br>
-        <strong>Description</strong><br>
-        <span id="job-info-description"><?= $job_data["uj_info"]["description"] ?></span>
-        
-        <div class="col-lg-12"><br><br><br></div>
-      </div>
-      <div class="col-lg-7 bids-section">            
-        <div class="col-lg-8">
-          <p><strong>Created On:</strong> <?= date("jS M Y", $job_data["uj_info"]["created_on"]) ?></p>
-          <p><strong>Due by:</strong> <?= date("jS M Y", $job_data["uj_info"]["deadline"]) ?></p>
-          <p><strong>Budget:</strong> KSH <?= $job_data["uj_info"]["amount_min"]." - ".$job_data["uj_info"]["amount_max"]  ?> </p>
-          <br><br>
-        </div>
-
-        <div class="col-lg-12 jobs-list-container">
-          <fieldset>
-            <legend><h3><small>BIDS</small></h3></legend>
-          </fieldset>
-          <div class="row col-lg-12">
-            <div><span class="badge badge-blue"><?= count($job_data["bids"]);  ?> bids</span><br><br><br></div>
-
-            <table class="table">              
-              <tbody id="bids-listings">
-                
-                <?php
-                
-                foreach($job_data["bids"] as $bid)
-                {                
-                    echo "<tr dx='{$bid["id"]}'><td dx='{$bid["id"]}'>"
-                    . "<div class='col-lg-2'><img src='{$bid["avatar"]}' style='width: 80px; height: auto'></div>"
-                    . "<div class='col-lg-10'><div class='col-lg-5'><span class='bid-user'>{$bid["names"]}</span> <i class='fa fa-star' style='color:#FFD700;'></i> {$bid["reputation"]}</div><div class='col-lg-4'><i class='fa fa-fw fa-map-marker'></i><small>{$bid["location"]}</small></div>"
-                    . "<div class='col-lg-3'><span class='pull-right'>";
-                    if($bid["bidder"] == $me && $bid["awarded"] == 0)
-                    {
-                        echo "<a href='javascript:;' vec='bid-edit' dx='{$bid["id"]}'><i class='fa fa-fw fa-pencil'></i></a><a href='javascript:;' vec='bid-delete' dx='{$bid["id"]}'><i class='fa fa-fw fa-trash-o'></i></a>&nbsp;";
-                    }
-                    
-                    echo "<small><i class='fa fa-clock-o fa-fw'></i>".Jobs::time_gap($bid["stamp"])."</small></span></div><div class='col-lg-6'><i class='fa fa-fw fa-credit-card'></i> <small><span class='bid-amount'>{$bid["amount"]}</span> ";
-                    if($bid["awarded"] == 1)
-                    {
-                        echo "&nbsp;&nbsp;<span><i class='fa fa-fw fa-gift' style='color: #40E0D0;'></i>&nbsp;<span class='label label-info'>accepted</span></span>";
-                    }
-                    
-                    else if($job_data["gen_info"]["me"]["is_owner"])
-                    {
-                        echo "<br><a href='javascript:;' class='btn btn-xs btn-danger' vec='bid-accept' dx='{$bid["id"]}'>Accept</a></small>";
-                    }                    
-                    
-                    echo "</div><div class='col-lg-12'><br><span class='bid-comment'>{$bid["comment"]}</span></div></div>";                
-                
-                }
-                
-                
-                if(!$job_data["gen_info"]["me"]["has_bidded"] && !$job_data["gen_info"]["job"]["has_bid_awarded"]  && !$job_data["gen_info"]["me"]["is_owner"])
-                {
-                ?>
-                <tr id="new_bid_tr">
-                  <td>
-                    <br><br>
-                    <fieldset><legend>Submit Bid <small>150 chars</small></legend></fieldset>
-                    <div class="col-lg-7"><label>Why are you the best candidate?</label><textarea class="form-control new-bid-comment" style="min-height: 150px;" placeholder="Be brief"></textarea></div>
-                    <div class="col-lg-5">
-                      <label>How much do you want?</label>
-                      <div class="input-group"><span class="input-group-addon">KSH</span><input type="text" class="form-control new-bid-amount" placeholder="0">
-                        <span class="input-group-addon">.00</span>
-                      </div>
-                      <br><br>
-                      <button class="btn btn-primary" id="new-bid-sb">Submit <i class="fa fa-fw fa-angle-double-right"></i></button>
-                    </div>
-                  </td>
-                </tr>
-                <?php
-                    }
-                ?>
-              </tbody>
-            </table>
-
-
-          </div>
-          <div class="col-lg-12"><br></div>
-        </div>  
-
-      </div>
-      <div class="col-lg-2">
-        <fieldset><legend><small>Status</small></legend></fieldset>
-        
-        <?php
-        $status_class = "primary";
-        $status_text = "Open";
-        
-        if($job_data["uj_info"]["status"] == 2)
-        {
-            $status_class = "warning";
-            $status_text = "Work Ongoing";
-        }
-        if($job_data["uj_info"]["status"] == 3)
-        {
-            $status_class = "success";
-            $status_text = "Pending Confirmation";
-        }
-        
-        ?>
-        
-        <span class="label label-<?= $status_class ?>">&nbsp;&nbsp;<?= $status_text ?>&nbsp;&nbsp;</span><br><br>
-        <?php
-            
-            if($job_data["gen_info"]["me"]["is_owner"] && !$job_data["gen_info"]["job"]["has_bid_awarded"])
-            {
-        
-        ?>
-        <fieldset><legend><small>Edit Job</small></legend></fieldset>
-        <button type="button" id="open_edit_job" class="btn btn-danger">Edit Job &nbsp;&nbsp;&nbsp;<i class="fa fa-fw fa-edit"></i></button><br><br>
-        <?php
-            }
-            if($job_data["gen_info"]["me"]["is_owner"] && (!$job_data["gen_info"]["job"]["has_bid_awarded"] || $job_data["uj_info"]["deadline"] < time()))
-            {
-        ?>        
-        <fieldset><legend><small>Delete Job</small></legend></fieldset>        
-        <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#delete_job_modal" id="job_delete">Delete Job &nbsp;&nbsp;<i class="fa fa-fw fa-trash-o"></i></button><br><br>
-        <?php
-            }
-            if($job_data["gen_info"]["me"]["my_bid_awarded"])
-            {
-        ?>        
-        <fieldset><legend><small>Upload your work</small></legend></fieldset>
-        <div id="job-upload-div"></div>
-        <button type="button" class="btn btn-primary" id="upload_sb_work">Upload &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i class="fa fa-fw fa-upload"></i></button><br><br>
-        <?php
-            }
-            if(($job_data["gen_info"]["me"]["is_owner"] || $job_data["gen_info"]["me"]["my_bid_awarded"]) && $job_data["uj_info"]["status"] == 3)
-            {
-        ?>
-        <fieldset><legend><small>submitted work</small></legend></fieldset>
-        <table class="table">
-          <thead>File</thead>
-          <tbody>
-        <?php
-                foreach($job_data["sb_files"] as $file)
-                {
-                    $filename = pathinfo($file["basename"], PATHINFO_FILENAME);
-                    $ext = pathinfo($file["basename"], PATHINFO_EXTENSION);
-                    $nice_name = substr($filename, 0, strrpos($filename, "_")).$ext;
-                    
-                    echo "<tr><td><a href='download_file.php?mode=2&id=".$file["id"]."'>{$nice_name}</a></td></tr>";
-                }
-            }
-            if($job_data["gen_info"]["me"]["is_owner"] && $job_data["uj_info"]["status"] == 3)
-            {
-        ?>
-          </tbody>
-        </table>
-        <fieldset><legend><small>rate submitted work</small></legend></fieldset>        
-        <div id="sbwork-rating">
-            <input type="radio" name="example" class="rating" value="1">
-            <input type="radio" name="example" class="rating" value="2">
-            <input type="radio" name="example" class="rating" value="3">
-            <input type="radio" name="example" class="rating" value="4">
-            <input type="radio" name="example" class="rating" value="5">
-        </div>
-        <?php
-            }
-        ?>
-
-      </div>
-
-      <!-- Modal -->
-      <div class="modal fade" id="edit_job_modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"  data-backdrop="static" data-keyboard="false">
-        <div class="modal-dialog modal-lg" role="document">
-          <div class="modal-content">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-              <h4 class="modal-title" id="myModalLabel"><i class="fa fa-fw fa-edit"></i>&nbsp;Edit Job</h4>
-            </div>
-            <div class="modal-body" style="height: 500px; overflow-y: scroll;">
-              <form id="job_edit_form" action="controller/update_job.php" method="post" enctype="multipart/form-data">              
-                <div class="form-group">
-                  <label for="job_title">Summary <small>(30 chars)</small></label>
-                  <input type="text" class="form-control" name="job_title" id="job_title" placeholder="Very brief summary" value="<?= $job_data["uj_info"]["title"] ?>" required="">
-                </div>
-                <div class="form-group">
-                  <label for="job_desc">Complete description</label>
-                  <textarea class="form-control" id="job_desc" name="job_desc" placeholder="Be expansive about the job, project, task etc." required=""><?= $job_data["uj_info"]["description"] ?></textarea>                    
-                </div>
-                <div class="form-group">
-                  <label for="job_criteria">Category</label>
-                  <select class="form-control" id="job_category" name="job_category" required="">
-                    <option value="">Select Category</option>                    
-                <?php
-                    foreach($job_categories as $cat)
-                    {
-                        if($cat["name"] == "Other")
-                            continue;
-                ?>
-                <option value="<?= $cat["id"] ?>"><?= $cat["name"] ?></option>
-                <?php
-                    }
-                 ?>                
-                <option value="1">Other</option>
-                  </select>
-                </div>
-
-                <div class="form-group">
-                  <label for="job_tags">Additional Tags</label><br>
-                  <input type="text" class="form-control" name="job_tags" id="job_tags" placeholder="e.g. Physics, CPA, C++, Pharmacy">
-                </div>
-                <div class="form-group">
-                  <strong>Attach More Files</strong>&nbsp;&nbsp;<small>(if any) max <strong>25MB</strong> total</small>
-                  <div id="job_attach_files"></div>
-                </div>
-                <fieldset>
-                    <legend>Due by</legend>
-                    <label>Pick date</label>
-                    <div class="form-group">
-                      <div class="input-group" style="width: 50%;">
-                        <input type="text" class="form-control" id="job_deadline" name="job_deadline" value="<?= date("d/m/Y", $job_data["uj_info"]["deadline"]) ?>">
-                        <span class="input-group-addon"><i class="fa fa-fw fa-calendar"></i></span>
-                      </div>
-                    </div>                
-                </fieldset>
-
-                  <fieldset>
-                    <legend>Your Budget</legend>
-                    <div class="form-group">
-                      <label>Minimum</label>
-                      <div class="input-group" style="width: 50%;">
-                        <span class="input-group-addon">KSH</span>
-                        <input type="text" id="job_amount_min" name="job_amount_min" class="form-control" placeholder="Minimum amount" value="<?= $job_data["uj_info"]["amount_min"] ?>" required="">
-                        <span class="input-group-addon">.00</span>
-                      </div>                  
-                    </div>
-                    <div class="form-group">
-                      <label>Maximum</label>
-                      <div class="input-group" style="width: 50%;">
-                        <span class="input-group-addon">KSH</span>
-                        <input type="text" id="job_amount_max" name="job_amount_max" class="form-control" placeholder="Maximum amount" value="<?= $job_data["uj_info"]["amount_max"] ?>" required="">
-                        <span class="input-group-addon">.00</span>
-                      </div>                  
-                    </div>
-                  </fieldset>
-
-              </form>
-
-              <form class="feedback2" style="display: none;">
-                <div class="alert alert-info">hello</div>
-              </form>
-
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-              <button type="button" class="btn btn-primary" id="sb_job_create_form">Save</button>
-            </div>
+  <!-- END HEAD -->
+  <!-- BEGIN BODY -->  
+  <body class="page-quick-sidebar-over-content page-style-square page-header-fixed"> 
+    <!-- BEGIN HEADER -->
+    <div class="page-header navbar navbar-fixed-top">
+      <!-- BEGIN HEADER INNER -->
+      <div class="page-header-inner">
+        <!-- BEGIN LOGO -->
+        <div class="page-logo">
+          <a href="index.html">
+            <img src="metronic/admin/layout/img/logo.png" alt="logo" class="logo-default">
+          </a>
+          <div class="menu-toggler sidebar-toggler hide">
+            <!-- DOC: Remove the above "hide" to enable the sidebar toggler button on header -->
           </div>
         </div>
+        <!-- END LOGO -->
+        <!-- BEGIN RESPONSIVE MENU TOGGLER -->
+        <a href="javascript:;" class="menu-toggler responsive-toggler" data-toggle="collapse" data-target=".navbar-collapse">
+        </a>
+        <!-- END RESPONSIVE MENU TOGGLER -->
+        <!-- BEGIN TOP NAVIGATION MENU -->
+        <div class="top-menu">
+          <ul class="nav navbar-nav pull-right">
+            <!-- BEGIN NOTIFICATION DROPDOWN -->
+            <!-- DOC: Apply "dropdown-dark" class after below "dropdown-extended" to change the dropdown styte -->
+            <li class="dropdown dropdown-extended dropdown-notification" id="header_notification_bar">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-close-others="true">
+                <i class="icon-bell"></i>
+                <span class="badge badge-default">
+                  7 </span>
+              </a>
+              <ul class="dropdown-menu">
+                <li class="external">
+                  <h3><span class="bold">12 pending</span> notifications</h3>
+                  <a href="#">view all</a>
+                </li>
+                <li>
+                  <div class="slimScrollDiv" style="position: relative; overflow: hidden; width: auto; height: 250px;"><ul class="dropdown-menu-list scroller" style="height: 250px; overflow: hidden; width: auto;" data-handle-color="#637283" data-initialized="1">
+                      <li>
+                        <a href="javascript:;">
+                          <span class="time">just now</span>
+                          <span class="details">
+                            <span class="label label-sm label-icon label-success">
+                              <i class="fa fa-plus"></i>
+                            </span>
+                            New user registered. </span>
+                        </a>
+                      </li>
+                      <li>
+                        <a href="javascript:;">
+                          <span class="time">3 mins</span>
+                          <span class="details">
+                            <span class="label label-sm label-icon label-danger">
+                              <i class="fa fa-bolt"></i>
+                            </span>
+                            Server #12 overloaded. </span>
+                        </a>
+                      </li>
+                      <li>
+                        <a href="javascript:;">
+                          <span class="time">10 mins</span>
+                          <span class="details">
+                            <span class="label label-sm label-icon label-warning">
+                              <i class="fa fa-bell-o"></i>
+                            </span>
+                            Server #2 not responding. </span>
+                        </a>
+                      </li>
+                      <li>
+                        <a href="javascript:;">
+                          <span class="time">14 hrs</span>
+                          <span class="details">
+                            <span class="label label-sm label-icon label-info">
+                              <i class="fa fa-bullhorn"></i>
+                            </span>
+                            Application error. </span>
+                        </a>
+                      </li>
+                      <li>
+                        <a href="javascript:;">
+                          <span class="time">2 days</span>
+                          <span class="details">
+                            <span class="label label-sm label-icon label-danger">
+                              <i class="fa fa-bolt"></i>
+                            </span>
+                            Database overloaded 68%. </span>
+                        </a>
+                      </li>
+                      <li>
+                        <a href="javascript:;">
+                          <span class="time">3 days</span>
+                          <span class="details">
+                            <span class="label label-sm label-icon label-danger">
+                              <i class="fa fa-bolt"></i>
+                            </span>
+                            A user IP blocked. </span>
+                        </a>
+                      </li>
+                      <li>
+                        <a href="javascript:;">
+                          <span class="time">4 days</span>
+                          <span class="details">
+                            <span class="label label-sm label-icon label-warning">
+                              <i class="fa fa-bell-o"></i>
+                            </span>
+                            Storage Server #4 not responding dfdfdfd. </span>
+                        </a>
+                      </li>
+                      <li>
+                        <a href="javascript:;">
+                          <span class="time">5 days</span>
+                          <span class="details">
+                            <span class="label label-sm label-icon label-info">
+                              <i class="fa fa-bullhorn"></i>
+                            </span>
+                            System Error. </span>
+                        </a>
+                      </li>
+                      <li>
+                        <a href="javascript:;">
+                          <span class="time">9 days</span>
+                          <span class="details">
+                            <span class="label label-sm label-icon label-danger">
+                              <i class="fa fa-bolt"></i>
+                            </span>
+                            Storage server failed. </span>
+                        </a>
+                      </li>
+                    </ul><div class="slimScrollBar" style="width: 7px; position: absolute; top: 0px; opacity: 0.4; display: none; border-radius: 7px; z-index: 99; right: 1px; height: 121.359px; background: rgb(99, 114, 131);"></div><div class="slimScrollRail" style="width: 7px; height: 100%; position: absolute; top: 0px; display: none; border-radius: 7px; opacity: 0.2; z-index: 90; right: 1px; background: rgb(234, 234, 234);"></div></div>
+                </li>
+              </ul>
+            </li>
+            <!-- END NOTIFICATION DROPDOWN -->
+            <!-- BEGIN INBOX DROPDOWN -->
+            <li class="dropdown dropdown-extended dropdown-inbox" id="header_inbox_bar">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-close-others="true" aria-expanded="false">
+                <i class="icon-bubbles"></i>
+                <span class="badge badge-danger">
+                  4 </span>
+              </a>
+              <ul class="dropdown-menu">
+                <li class="external">
+                  <h3>You have <span class="bold">7 New</span> Messages</h3>
+                  <a href="#">view all</a>
+                </li>
+                <li>
+                  <div class="slimScrollDiv" style="position: relative; overflow: hidden; width: auto; height: 275px;"><ul class="dropdown-menu-list scroller" style="height: 275px; overflow: hidden; width: auto;" data-handle-color="#637283" data-initialized="1">
+                      <li>
+                        <a href="inbox.html?a=view">
+                          <span class="photo">
+                            <img src="metronic/admin/layout3/img/avatar2.jpg" class="img-circle" alt="">
+                          </span>
+                          <span class="subject">
+                            <span class="from">
+                              Lisa Wong </span>
+                            <span class="time">Just Now </span>
+                          </span>
+                          <span class="message">
+                            Vivamus sed auctor nibh congue nibh. auctor nibh auctor nibh... </span>
+                        </a>
+                      </li>
+                      <li>
+                        <a href="inbox.html?a=view">
+                          <span class="photo">
+                            <img src="metronic/admin/layout3/img/avatar3.jpg" class="img-circle" alt="">
+                          </span>
+                          <span class="subject">
+                            <span class="from">
+                              Richard Doe </span>
+                            <span class="time">16 mins </span>
+                          </span>
+                          <span class="message">
+                            Vivamus sed congue nibh auctor nibh congue nibh. auctor nibh auctor nibh... </span>
+                        </a>
+                      </li>
+                      <li>
+                        <a href="inbox.html?a=view">
+                          <span class="photo">
+                            <img src="metronic/admin/layout3/img/avatar1.jpg" class="img-circle" alt="">
+                          </span>
+                          <span class="subject">
+                            <span class="from">
+                              Bob Nilson </span>
+                            <span class="time">2 hrs </span>
+                          </span>
+                          <span class="message">
+                            Vivamus sed nibh auctor nibh congue nibh. auctor nibh auctor nibh... </span>
+                        </a>
+                      </li>
+                      <li>
+                        <a href="inbox.html?a=view">
+                          <span class="photo">
+                            <img src="metronic/admin/layout3/img/avatar2.jpg" class="img-circle" alt="">
+                          </span>
+                          <span class="subject">
+                            <span class="from">
+                              Lisa Wong </span>
+                            <span class="time">40 mins </span>
+                          </span>
+                          <span class="message">
+                            Vivamus sed auctor 40% nibh congue nibh... </span>
+                        </a>
+                      </li>
+                      <li>
+                        <a href="inbox.html?a=view">
+                          <span class="photo">
+                            <img src="metronic/admin/layout3/img/avatar3.jpg" class="img-circle" alt="">
+                          </span>
+                          <span class="subject">
+                            <span class="from">
+                              Richard Doe </span>
+                            <span class="time">46 mins </span>
+                          </span>
+                          <span class="message">
+                            Vivamus sed congue nibh auctor nibh congue nibh. auctor nibh auctor nibh... </span>
+                        </a>
+                      </li>
+                    </ul><div class="slimScrollBar" style="width: 7px; position: absolute; top: 0px; opacity: 0.4; display: none; border-radius: 7px; z-index: 99; right: 1px; height: 159.211px; background: rgb(99, 114, 131);"></div><div class="slimScrollRail" style="width: 7px; height: 100%; position: absolute; top: 0px; display: none; border-radius: 7px; opacity: 0.2; z-index: 90; right: 1px; background: rgb(234, 234, 234);"></div></div>
+                </li>
+              </ul>
+            </li>
+            <!-- END INBOX DROPDOWN -->
+            <!-- BEGIN TODO DROPDOWN -->
+            <!-- DOC: Apply "dropdown-dark" class after below "dropdown-extended" to change the dropdown styte -->
+            <li class="dropdown dropdown-extended dropdown-tasks" id="header_task_bar">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-close-others="true" aria-expanded="false">
+                <i class="icon-calendar"></i>
+                <span class="badge badge-primary">
+                  3 </span>
+              </a>
+              <ul class="dropdown-menu extended tasks">
+                <li class="external">
+                  <h3>You have <span class="bold">12 pending</span> tasks</h3>
+                  <a href="#">view all</a>
+                </li>
+                <li>
+                  <div class="slimScrollDiv" style="position: relative; overflow: hidden; width: auto; height: 275px;"><ul class="dropdown-menu-list scroller" style="height: 275px; overflow: hidden; width: auto;" data-handle-color="#637283" data-initialized="1">
+                      <li>
+                        <a href="javascript:;">
+                          <span class="task">
+                            <span class="desc">New release v1.2 </span>
+                            <span class="percent">30%</span>
+                          </span>
+                          <span class="progress">
+                            <span style="width: 40%;" class="progress-bar progress-bar-success" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"><span class="sr-only">40% Complete</span></span>
+                          </span>
+                        </a>
+                      </li>
+                      <li>
+                        <a href="javascript:;">
+                          <span class="task">
+                            <span class="desc">Application deployment</span>
+                            <span class="percent">65%</span>
+                          </span>
+                          <span class="progress">
+                            <span style="width: 65%;" class="progress-bar progress-bar-danger" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100"><span class="sr-only">65% Complete</span></span>
+                          </span>
+                        </a>
+                      </li>
+                      <li>
+                        <a href="javascript:;">
+                          <span class="task">
+                            <span class="desc">Mobile app release</span>
+                            <span class="percent">98%</span>
+                          </span>
+                          <span class="progress">
+                            <span style="width: 98%;" class="progress-bar progress-bar-success" aria-valuenow="98" aria-valuemin="0" aria-valuemax="100"><span class="sr-only">98% Complete</span></span>
+                          </span>
+                        </a>
+                      </li>
+                      <li>
+                        <a href="javascript:;">
+                          <span class="task">
+                            <span class="desc">Database migration</span>
+                            <span class="percent">10%</span>
+                          </span>
+                          <span class="progress">
+                            <span style="width: 10%;" class="progress-bar progress-bar-warning" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"><span class="sr-only">10% Complete</span></span>
+                          </span>
+                        </a>
+                      </li>
+                      <li>
+                        <a href="javascript:;">
+                          <span class="task">
+                            <span class="desc">Web server upgrade</span>
+                            <span class="percent">58%</span>
+                          </span>
+                          <span class="progress">
+                            <span style="width: 58%;" class="progress-bar progress-bar-info" aria-valuenow="58" aria-valuemin="0" aria-valuemax="100"><span class="sr-only">58% Complete</span></span>
+                          </span>
+                        </a>
+                      </li>
+                      <li>
+                        <a href="javascript:;">
+                          <span class="task">
+                            <span class="desc">Mobile development</span>
+                            <span class="percent">85%</span>
+                          </span>
+                          <span class="progress">
+                            <span style="width: 85%;" class="progress-bar progress-bar-success" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100"><span class="sr-only">85% Complete</span></span>
+                          </span>
+                        </a>
+                      </li>
+                      <li>
+                        <a href="javascript:;">
+                          <span class="task">
+                            <span class="desc">New UI release</span>
+                            <span class="percent">38%</span>
+                          </span>
+                          <span class="progress progress-striped">
+                            <span style="width: 38%;" class="progress-bar progress-bar-important" aria-valuenow="18" aria-valuemin="0" aria-valuemax="100"><span class="sr-only">38% Complete</span></span>
+                          </span>
+                        </a>
+                      </li>
+                    </ul><div class="slimScrollBar" style="width: 7px; position: absolute; top: 0px; opacity: 0.4; display: none; border-radius: 7px; z-index: 99; right: 1px; height: 148.284px; background: rgb(99, 114, 131);"></div><div class="slimScrollRail" style="width: 7px; height: 100%; position: absolute; top: 0px; display: none; border-radius: 7px; opacity: 0.2; z-index: 90; right: 1px; background: rgb(234, 234, 234);"></div></div>
+                </li>
+              </ul>
+            </li>
+            <!-- END TODO DROPDOWN -->
+            <!-- BEGIN USER LOGIN DROPDOWN -->
+            <li class="dropdown dropdown-user">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-close-others="true" aria-expanded="false">
+                <img alt="" class="img-circle" src="metronic/admin/layout/img/avatar3_small.jpg">
+                <span class="username username-hide-on-mobile">
+                  Nick </span>
+                <i class="fa fa-angle-down"></i>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-default">
+                <li>
+                  <a href="#">
+                    <i class="icon-user"></i> My Profile </a>
+                </li>                
+                <li class="divider"></li>
+                <li>
+                  <a href="#">
+                    <i class="icon-question"></i> FAQs </a>
+                </li>
+                <li>
+                  <a href="#">
+                    <i class="icon-book-open"></i> Terms &amp; Conditions </a>
+                </li>
+                <li>
+                  <a href="#">
+                    <i class="icon-shield"></i> Privacy Policy </a>
+                </li>
+                <li class="divider">
+                </li>
+                <li>
+                  <a href="#">
+                    <i class="icon-lock"></i> Lock Screen </a>
+                </li>
+                <li>
+                  <a href="login.html">
+                    <i class="icon-key"></i> Log Out </a>
+                </li>
+              </ul>
+            </li>
+            <!-- END USER LOGIN DROPDOWN -->
+            <!-- BEGIN QUICK SIDEBAR TOGGLER -->
+            <li class="dropdown dropdown-quick-sidebar-toggler">
+              <a href="javascript:;" class="dropdown-toggle">
+                <i class="icon-logout"></i>
+              </a>
+            </li>
+            <!-- END QUICK SIDEBAR TOGGLER -->
+          </ul>
+        </div>
+        <!-- END TOP NAVIGATION MENU -->
       </div>
-
-      <div id="jobs-load" style="display: none;"></div>
-
-      <div class="modal fade" id="edit_bid_modal" data-backdrop="static" data-keyboard="false">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-              <h4 class="modal-title"><i class="fa fa-fw fa-edit"></i>&nbsp;Edit bid</h4>
-            </div>
-            <div class="modal-body">
-              <div class="row">
-                <div class="col-lg-7">
-                  <textarea class="form-control edit-bid-comment" style="min-height: 100px;" placeholder="Bid Comment"></textarea>
+      <!-- END HEADER INNER -->
+    </div>
+    <!-- END HEADER -->
+    <div class="clearfix">
+    </div>
+    <!-- BEGIN CONTAINER -->
+    <div class="page-container">
+      <!-- BEGIN SIDEBAR -->
+      <div class="page-sidebar-wrapper">
+        <div class="page-sidebar navbar-collapse collapse" aria-expanded="false" style="height: 0px;">
+          <!-- BEGIN SIDEBAR MENU -->          
+          <ul class="page-sidebar-menu" data-keep-expanded="false" data-auto-scroll="true" data-slide-speed="200">
+            <!-- DOC: To remove the sidebar toggler from the sidebar you just need to completely remove the below "sidebar-toggler-wrapper" LI element -->
+            <li class="sidebar-toggler-wrapper">
+              <!-- BEGIN SIDEBAR TOGGLER BUTTON -->
+              <div class="sidebar-toggler">
+              </div>
+              <!-- END SIDEBAR TOGGLER BUTTON -->
+            </li>            
+            <li class="sidebar-search-wrapper">
+              <!-- BEGIN RESPONSIVE QUICK SEARCH FORM -->              
+              <form class="sidebar-search" action="extra_search.html" method="POST">
+                <a href="javascript:;" class="remove">
+                  <i class="icon-close"></i>
+                </a>
+                <div class="input-group">
+                  <input type="text" class="form-control" placeholder="Search...">
+                  <span class="input-group-btn">
+                    <a href="javascript:;" class="btn submit"><i class="icon-magnifier"></i></a>
+                  </span>
                 </div>
-                <div class="col-lg-5">
-                  <div class="input-group">
-                    <span class="input-group-addon">KSH</span>
-                    <input type="text" class="form-control edit-bid-amount" placeholder="Bid Amount">
-                    <span class="input-group-addon">.00</span>
+              </form>
+              <!-- END RESPONSIVE QUICK SEARCH FORM -->
+            </li>
+            <li>
+              <a href="javascript:;">
+                <i class="icon-home"></i>
+                <span class="title">Dashboard</span>                
+                <span class="arrow"></span>
+              </a>              
+            </li>
+            <li>
+              <a href="javascript:;">
+                <i class="icon-user"></i>
+                <span class="title">Profile</span>
+                <span class="arrow "></span>
+              </a>              
+            </li>
+
+            <li class="heading">
+              <h3 class="uppercase">Jobs</h3>
+            </li>
+            <li>
+              <a href="javascript:;">
+                <i class="icon-rocket"></i>
+                <span class="title">Post</span>
+                <span class="arrow "></span>
+              </a>              
+            </li>
+            <li  class="start active">
+              <a href="javascript:;">
+                <i class="icon-wallet"></i>
+                <span class="title">Browse</span>
+                <span class="selected"></span>
+                <span class="arrow "></span>
+              </a>              
+            </li>
+            <li>
+              <a href="javascript:;">
+                <i class="icon-docs"></i>
+                <span class="title">Categories</span>
+                <span class="arrow "></span>
+              </a>              
+            </li>
+            <li>
+              <a href="javascript:;">
+                <i class="icon-badge"></i>
+                <span class="title">Tags</span>
+                <span class="arrow "></span>
+              </a>              
+            </li>
+
+            <li class="heading">
+              <h3 class="uppercase">More</h3>
+            </li>
+            <li>
+              <a href="javascript:;">
+                <i class="icon-notebook"></i>
+                <span class="title">About Us</span>
+                <span class="arrow "></span>
+              </a>              
+            </li>
+            <li>
+              <a href="javascript:;">
+                <i class="icon-call-end"></i>
+                <span class="title">Contact Us</span>
+                <span class="arrow "></span>
+              </a>              
+            </li>
+
+          </ul>
+          <!-- END SIDEBAR MENU -->
+        </div>
+      </div>
+      <!-- END SIDEBAR -->
+      <!-- BEGIN CONTENT -->
+      <div class="page-content-wrapper">
+        <div class="page-content" style="min-height:602px">
+          <div class="modal fade" id="portlet-config" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+                  <h4 class="modal-title">Modal title</h4>
+                </div>
+                <div class="modal-body">
+                  Widget settings form goes here
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn blue">Save changes</button>
+                  <button type="button" class="btn default" data-dismiss="modal">Close</button>
+                </div>
+              </div>
+              <!-- /.modal-content -->
+            </div>
+            <!-- /.modal-dialog -->
+          </div>
+          <!-- /.modal -->
+          <!-- END SAMPLE PORTLET CONFIGURATION MODAL FORM-->
+          <!-- BEGIN STYLE CUSTOMIZER -->
+          <div class="theme-panel hidden-xs hidden-sm">
+            <div class="btn-toolbar" role="toolbar" aria-label="...">
+              <a class="btn btn-primary" href="#">Post a Job. It is free</a>                           
+            </div>            
+          </div>
+          <!-- END STYLE CUSTOMIZER -->
+          <!-- BEGIN PAGE HEADER-->
+          <h3 class="page-title">
+            Jobs <small>bid &amp; post new</small>
+          </h3>
+          <div class="page-bar">
+            <ul class="page-breadcrumb">
+              <li>
+                <i class="fa fa-home"></i>
+                <a href="home.php">Home</a>
+                <i class="fa fa-angle-right"></i>
+              </li>
+              <li>
+                <a href="#">Jobs</a>
+              </li>
+            </ul>
+            <div class="page-toolbar">
+              <div id="dashboard-report" class="pull-right btn btn-fit-height grey-salt">
+                <i class="icon-calendar"></i>&nbsp;
+                <span class="thin uppercase visible-lg-inline-block">March 22, 2016</span>                
+              </div>
+            </div>
+          </div>          
+
+          <div class="row">
+            <div class="col-md-4 category-side">
+              <p>
+              <ul class="text-success category-list">
+                <li><i class="fa fa-angle-right"></i> <a href="#" class="text-success">IT &amp; Networking</a>&nbsp;&nbsp;<span class="badge badge-default">70</span> 
+                  <ul class="category-list">
+                    <li><i class="fa fa-angle-right"></i> <a href="#" class="text-success">Database Administration</a></li>
+                    <li><i class="fa fa-angle-right"></i> <a href="#" class="text-success">ERP / CRM Software</a></li>
+                  </ul>
+                </li>
+                <li><i class="fa fa-angle-right"></i> <a href="#" class="text-success">Information Security</a></li>
+                <li><i class="fa fa-angle-right"></i> <a href="#" class="text-success">Network & System Administration</a></li>
+              </ul>
+              </p>              
+
+            </div>
+
+            <div class="col-md-8">
+              <form action="#" class="horizontal-form">
+                <div class="form-body">                            
+                  <div class="row">
+                    <div class="col-md-6">
+                      <div class="form-group">                        
+                        <input type="text" id="firstName" class="form-control" placeholder="Type anything and hit Enter">
+                        <span class="help-block">
+                        </span>
+                      </div>
+                    </div>                  
+                    <div class="col-md-6">
+                      <div class="form-group">                        
+                        <select class="form-control jobs-search" id="search_category" name="search_category">
+                            <option value="">Select Category</option>
+                            <option value="1">Other</option>
+                        </select>
+                        <span class="help-block">
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col-md-6">
+                      <div class="form-group">                        
+                        <input type="text" class="form-control jobs-search" name="search_tags" id="search_tags" placeholder="Search tags">
+                        <span class="help-block">
+                          Physics, CPA, C++, Furniture, etc.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  </div>                  
+              </form>
+              <hr>
+              <div class="col-md-12" id="job-listings">
+                  <div class="row">
+                      <div class="col-md-10">
+                        <a href="#" class="job-main-link text-info">System Administrator</a>
+                    </div>
+                    <div class="col-md-2 right"><small><i class="fa fa-clock-o"></i> 9h</small></div>
+                    <div class="col-md-5"><br>Hourly price: KSh 300-400</div>
+                    <div class="col-md-5"><br>Duration: 4 weeks</div>
+                    <div class="col-md-2 right"><br><span class="badge badge-primary">30 bids</span></div>
+                    <div class="col-md-12"><br>
+                        bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh 
+                        bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh
+                        bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh 
+                      </div>
+                    <div class="col-md-12"><br>
+                        <span class="label label-warning">C++</span>
+                        <span class="label label-warning">C++</span>
+                        <span class="label label-warning">C++</span>
+                        <span class="label label-warning">C++</span>
+                    </div>
+                    <div class="col-md-12"><hr></div>
+                  </div>
+                  <div class="row">
+                      <div class="col-md-10">
+                        <a href="#" class="job-main-link text-info">System Administrator</a>
+                    </div>
+                    <div class="col-md-2 right"><small><i class="fa fa-clock-o"></i> 9h</small></div>
+                    <div class="col-md-5"><br>Hourly price: KSh 300-400</div>
+                    <div class="col-md-5"><br>Duration: 4 weeks</div>
+                    <div class="col-md-2 right"><br><span class="badge badge-primary">30 bids</span></div>
+                    <div class="col-md-12"><br>
+                        bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh 
+                        bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh
+                        bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh bluh 
+                      </div>
+                    <div class="col-md-12"><br>
+                        <span class="label label-warning">C++</span>
+                        <span class="label label-warning">C++</span>
+                        <span class="label label-warning">C++</span>
+                        <span class="label label-warning">C++</span>
+                    </div>
+                    <div class="col-md-12"><hr></div>
+                  </div>
+                
+                
+              </div>              
+              
+            </div>
+          </div> 
+
+
+        </div>
+      </div>
+      <!-- END CONTENT -->
+      <!-- BEGIN QUICK SIDEBAR -->
+      <a href="javascript:;" class="page-quick-sidebar-toggler"><i class="icon-close"></i></a>
+      <div class="page-quick-sidebar-wrapper">
+        <div class="page-quick-sidebar">
+          <div class="nav-justified">
+            <ul class="nav nav-tabs nav-justified">
+              <li class="active">
+                <a href="#quick_sidebar_tab_1" data-toggle="tab" class="">
+                  Chats
+                </a>
+              </li>
+            </ul>
+            <div class="tab-content">
+              <div class="tab-pane active page-quick-sidebar-chat" id="quick_sidebar_tab_1">
+                <div class="page-quick-sidebar-list" style="position: relative; overflow: hidden; width: auto; height: 538px;">
+                  <div class="page-quick-sidebar-chat-users" data-rail-color="#ddd" data-wrapper-class="page-quick-sidebar-list" data-height="538" data-initialized="1" style="overflow: hidden; width: auto; height: 538px;">
+
+                    <ul class="media-list list-items">
+                      <li class="media">
+                        <div class="media-body">
+                          <span class="media-heading"><i class="icon-plus"></i> NEW</span>                          
+                        </div>
+                      </li>
+                    </ul>
+
+                    <h3 class="list-heading">Chats</h3>
+                    <ul class="media-list list-items">
+                      <li class="media">
+                        <div class="media-status">
+                          <span class="badge badge-success">8</span>
+                        </div>
+                        <img class="media-object" src="metronic/admin/layout/img/avatar3.jpg" alt="...">
+                        <div class="media-body">
+                          <h4 class="media-heading">Bob Nilson</h4>
+                          <div class="media-heading-sub">
+                            Project Manager
+                          </div>
+                        </div>
+                      </li>
+                      <li class="media">
+                        <img class="media-object" src="metronic/admin/layout/img/avatar1.jpg" alt="...">
+                        <div class="media-body">
+                          <h4 class="media-heading">Nick Larson</h4>
+                          <div class="media-heading-sub">
+                            Art Director
+                          </div>
+                        </div>
+                      </li>
+                      <li class="media">
+                        <div class="media-status">
+                          <span class="badge badge-danger">3</span>
+                        </div>
+                        <img class="media-object" src="metronic/admin/layout/img/avatar4.jpg" alt="...">
+                        <div class="media-body">
+                          <h4 class="media-heading">Deon Hubert</h4>
+                          <div class="media-heading-sub">
+                            CTO
+                          </div>
+                        </div>
+                      </li>
+                      <li class="media">
+                        <img class="media-object" src="metronic/admin/layout/img/avatar2.jpg" alt="...">
+                        <div class="media-body">
+                          <h4 class="media-heading">Ella Wong</h4>
+                          <div class="media-heading-sub">
+                            CEO
+                          </div>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                  <div class="slimScrollBar" style="width: 7px; position: absolute; top: 0px; opacity: 0.4; display: block; border-radius: 7px; z-index: 99; right: 1px; height: 391.67px; background: rgb(187, 187, 187);"></div><div class="slimScrollRail" style="width: 7px; height: 100%; position: absolute; top: 0px; display: none; border-radius: 7px; opacity: 0.2; z-index: 90; right: 1px; background: rgb(221, 221, 221);"></div></div>
+                <div class="page-quick-sidebar-item">
+                  <div class="page-quick-sidebar-chat-user">
+                    <div class="page-quick-sidebar-nav">
+                      <a href="javascript:;" class="page-quick-sidebar-back-to-list"><i class="icon-arrow-left"></i>Back</a>
+                    </div>
+                    <div class="slimScrollDiv" style="position: relative; overflow: hidden; width: auto; height: 433px;"><div class="page-quick-sidebar-chat-user-messages" data-height="433" data-initialized="1" style="overflow: hidden; width: auto; height: 433px;">
+                        <div class="post out">
+                          <img class="avatar" alt="" src="metronic/admin/layout/img/avatar3.jpg">
+                          <div class="message">
+                            <span class="arrow"></span>
+                            <a href="#" class="name">Bob Nilson</a>
+                            <span class="datetime">20:15</span>
+                            <span class="body">
+                              When could you send me the report ? </span>
+                          </div>
+                        </div>
+                        <div class="post in">
+                          <img class="avatar" alt="" src="metronic/admin/layout/img/avatar2.jpg">
+                          <div class="message">
+                            <span class="arrow"></span>
+                            <a href="#" class="name">Ella Wong</a>
+                            <span class="datetime">20:15</span>
+                            <span class="body">
+                              Its almost done. I will be sending it shortly </span>
+                          </div>
+                        </div>
+                        <div class="post out">
+                          <img class="avatar" alt="" src="metronic/admin/layout/img/avatar3.jpg">
+                          <div class="message">
+                            <span class="arrow"></span>
+                            <a href="#" class="name">Bob Nilson</a>
+                            <span class="datetime">20:15</span>
+                            <span class="body">
+                              Alright. Thanks! :) </span>
+                          </div>
+                        </div>
+                        <div class="post in">
+                          <img class="avatar" alt="" src="metronic/admin/layout/img/avatar2.jpg">
+                          <div class="message">
+                            <span class="arrow"></span>
+                            <a href="#" class="name">Ella Wong</a>
+                            <span class="datetime">20:16</span>
+                            <span class="body">
+                              You are most welcome. Sorry for the delay. </span>
+                          </div>
+                        </div>
+                        <div class="post out">
+                          <img class="avatar" alt="" src="metronic/admin/layout/img/avatar3.jpg">
+                          <div class="message">
+                            <span class="arrow"></span>
+                            <a href="#" class="name">Bob Nilson</a>
+                            <span class="datetime">20:17</span>
+                            <span class="body">
+                              No probs. Just take your time :) </span>
+                          </div>
+                        </div>
+                        <div class="post in">
+                          <img class="avatar" alt="" src="metronic/admin/layout/img/avatar2.jpg">
+                          <div class="message">
+                            <span class="arrow"></span>
+                            <a href="#" class="name">Ella Wong</a>
+                            <span class="datetime">20:40</span>
+                            <span class="body">
+                              Alright. I just emailed it to you. </span>
+                          </div>
+                        </div>
+                        <div class="post out">
+                          <img class="avatar" alt="" src="metronic/admin/layout/img/avatar3.jpg">
+                          <div class="message">
+                            <span class="arrow"></span>
+                            <a href="#" class="name">Bob Nilson</a>
+                            <span class="datetime">20:17</span>
+                            <span class="body">
+                              Great! Thanks. Will check it right away. </span>
+                          </div>
+                        </div>
+                        <div class="post in">
+                          <img class="avatar" alt="" src="metronic/admin/layout/img/avatar2.jpg">
+                          <div class="message">
+                            <span class="arrow"></span>
+                            <a href="#" class="name">Ella Wong</a>
+                            <span class="datetime">20:40</span>
+                            <span class="body">
+                              Please let me know if you have any comment. </span>
+                          </div>
+                        </div>
+                        <div class="post out">
+                          <img class="avatar" alt="" src="metronic/admin/layout/img/avatar3.jpg">
+                          <div class="message">
+                            <span class="arrow"></span>
+                            <a href="#" class="name">Bob Nilson</a>
+                            <span class="datetime">20:17</span>
+                            <span class="body">
+                              Sure. I will check and buzz you if anything needs to be corrected. </span>
+                          </div>
+                        </div>
+                      </div><div class="slimScrollBar" style="width: 7px; position: absolute; top: 0px; opacity: 0.4; display: block; border-radius: 7px; z-index: 99; right: 1px; height: 272.513px; background: rgb(187, 187, 187);"></div><div class="slimScrollRail" style="width: 7px; height: 100%; position: absolute; top: 0px; display: none; border-radius: 7px; opacity: 0.2; z-index: 90; right: 1px; background: rgb(234, 234, 234);"></div></div>
+                    <div class="page-quick-sidebar-chat-user-form">
+                      <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Type a message here...">
+                        <div class="input-group-btn">
+                          <button type="button" class="btn blue"><i class="icon-paper-clip"></i></button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-            <div class="modal-footer">
-              <span id="edit-bid-loading-gif"></span>
-              <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-              <button type="button" class="btn btn-primary" id="save-bid-edits">Save changes</button>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <div class="modal fade" id="delete_bid_modal" data-backdrop="static" data-keyboard="false">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-              <h4 class="modal-title"><i class="fa fa-fw fa-trash-o"></i>&nbsp;Delete bid</h4>
-            </div>
-            <div class="modal-body">
-              <p>Are you sure you want to delete your bid to this bid?</p>
-            </div>
-            <div class="modal-footer">
-              <span id="delete-bid-loading-gif"></span>
-              <button type="button" class="btn btn-danger" id="delete-bid-sb">Delete</button>
-              <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
             </div>
           </div>
         </div>
       </div>
-      
-      <div class="modal fade" id="delete_job_modal" data-backdrop="static" data-keyboard="false">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-              <h4 class="modal-title"><i class="fa fa-fw fa-trash-o"></i>&nbsp;Delete Job</h4>
-            </div>
-            <div class="modal-body">
-              <p>Are you sure you want to delete this job?</p>
-            </div>
-            <div class="modal-footer">
-              <span id="delete-job-loading-gif"></span>
-              <button type="button" class="btn btn-danger" id="delete-job-conf">Delete</button>
-              <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-            </div>
-          </div>
-        </div>
+      <!-- END QUICK SIDEBAR -->
+    </div>
+    <!-- END CONTAINER -->
+    <!-- BEGIN FOOTER -->
+    <div class="page-footer">
+      <div class="page-footer-inner">
+        2016 &copy; KaziOnline
       </div>
-
-      <div class="modal fade" id="accept_bid_modal" data-backdrop="static" data-keyboard="false">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-              <h4 class="modal-title"><i class="fa fa-fw fa-check"></i>&nbsp;Accept bid</h4>
-            </div>
-            <div class="modal-body">
-              <p>Are you sure you want to accept bid from <strong><span id="bid-accept-usr">Kim</span></strong> for KSH <strong><span id="bid-accept-amt">12,500</span></strong></p>
-            </div>
-            <div class="modal-footer">
-              <span id="accept-bid-loading-gif"></span>        
-              <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-              <button type="button" class="btn btn-danger" id="accept-bid-sb">Confirm</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="modal fade" id="notifs_modal" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title">Modal title</h4>
-      </div>
-      <div class="modal-body">
-        
-          <?php
-          
-            foreach($notifications["notifications"] as $notif)
-            {
-                $intro = substr($notif["msg"], 0, strpos($notif["msg"], "!"));
-                $info = substr($notif["msg"], strpos($notif["msg"], "!")+1);
-                
-                $class="";                
-                if(!$notif["is_read"])
-                    $class="unread_notif";
-                
-                
-          ?>
-        <div class="row <?= $class ?>">
-           <div class="col-lg-10">
-              <h4><?= $intro ?></h4>
-            </div>
-            <div class="col-lg-2"><small><?= $notif["time"] ?></small></div>
-            <div class="col-lg-10">
-                <?= $info ?>
-            </div>
-        <div class="col-lg-12"><hr></div>
-        </div>
-        <?php
-            }
-        ?>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>        
+      <div class="scroll-to-top" style="display: none;">
+        <i class="icon-arrow-up"></i>
       </div>
     </div>
-  </div>
-</div>
-      
-      <div class="feedback" style="display: none">
-        <div class="alert alert-info">wassup</div>
-      </div>
+    <!-- END FOOTER -->
+    <!-- BEGIN JAVASCRIPTS(Load javascripts at bottom, this will reduce page load time) -->
+    <!-- BEGIN CORE PLUGINS -->
+    <!--[if lt IE 9]>
+    <script src="metronic/global/plugins/respond.min.js"></script>
+    <script src="metronic/global/plugins/excanvas.min.js"></script> 
+    <![endif]-->
+    <script src="metronic/global/plugins/jquery.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/jquery-migrate.min.js" type="text/javascript"></script>
+    <!-- IMPORTANT! Load jquery-ui-1.10.3.custom.min.js before bootstrap.min.js to fix bootstrap tooltip conflict with jquery ui tooltip -->
+    <script src="metronic/global/plugins/jquery-ui/jquery-ui-1.10.3.custom.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/bootstrap-hover-dropdown/bootstrap-hover-dropdown.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/jquery-slimscroll/jquery.slimscroll.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/jquery.blockui.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/jquery.cokie.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/uniform/jquery.uniform.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/bootstrap-switch/js/bootstrap-switch.min.js" type="text/javascript"></script>
+    <!-- END CORE PLUGINS -->
+    <!-- BEGIN PAGE LEVEL PLUGINS -->    
+    <script src="metronic/global/plugins/flot/jquery.flot.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/flot/jquery.flot.resize.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/flot/jquery.flot.categories.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/jquery.pulsate.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/bootstrap-daterangepicker/moment.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/bootstrap-daterangepicker/daterangepicker.js" type="text/javascript"></script>
+    <!-- IMPORTANT! fullcalendar depends on jquery-ui-1.10.3.custom.min.js for drag & drop support -->
+    <script src="metronic/global/plugins/fullcalendar/fullcalendar.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/jquery-easypiechart/jquery.easypiechart.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/jquery.sparkline.min.js" type="text/javascript"></script>
+    <!-- END PAGE LEVEL PLUGINS -->
+    <!-- BEGIN PAGE LEVEL SCRIPTS -->
+    <script src="metronic/global/scripts/metronic.js" type="text/javascript"></script>
+    <script src="metronic/admin/layout/scripts/layout.js" type="text/javascript"></script>
+    <script src="metronic/admin/layout/scripts/quick-sidebar.js" type="text/javascript"></script>
+    <script src="metronic/admin/layout/scripts/demo.js" type="text/javascript"></script>
+    <script src="metronic/admin/pages/scripts/index.js" type="text/javascript"></script>
+    <script src="metronic/admin/pages/scripts/tasks.js" type="text/javascript"></script>
+    <!-- END PAGE LEVEL SCRIPTS -->
+    <script>
+          jQuery(document).ready(function ()
+          {
+              Metronic.init(); // init metronic core componets
+              Layout.init(); // init layout
+              QuickSidebar.init(); // init quick sidebar              
+              Index.init();
+              Index.initDashboardDaterange();
+              Index.initJQVMAP(); // init index page's custom scripts
+              Index.initCalendar(); // init index page's custom scripts
+              Index.initCharts(); // init index page's custom scripts
+              Index.initChat();
+              Index.initMiniCharts();
+              Tasks.initDashboardWidget();
+          });
+    </script>
+    <!-- END JAVASCRIPTS -->
 
-
-      <script src="jquery/jquery-1.10.2.min.js"></script>
-      <script src="jquery/jquery.form.js"></script> 
-      <script src="bootstrap/js/bootstrap.min.js"></script>
-      <script src="bootstrap/js/metisMenu.min.js"></script>
-      <script src="bootstrap/js/dashboard_custom.js"></script>
-      <script src="bootstrap/js/dashboard_js.js"></script>
-      <script src="jquery/bootstrap3-typeahead.min.js"></script>
-      <script src="bootstrap/js/bootstrap-tagsinput.js"></script>
-      <script src="jquery/datepicker.js"></script>
-      <script src="jquery/jquery.uploadfile.js"></script>
-      <script src="jquery/rating.js"></script>
-      <script type="text/javascript">
-          
-            var work_rating = 0
-
-            var tomorrow = new Date()
-            tomorrow.setDate(tomorrow.getDate() + 1)         
-             
-            var allowed_exts = "csv,xls,xlsx,txt,png,jpg,gif,bmp,avi,mpg,mpeg,mp4,mp3,wav,flv,pdf,doc,docx,ppt,pptx,psd,pub,7z,ppd,bz,bz2,ico,jar,phar,tex,latex,wma,wmx,wmv,mpga,mp4a,oda,oxt,ogx,oga,ogv,odb,rar,tar,xz,zip,gtar,tiff";
-
-            $(function ()
-            {
-                $("#job_category").val($("#job-info-category").html())                
-                                
-                $("#job_deadline").datepicker({zIndex: 1000000, autohide: true, startDate: tomorrow, format: 'dd/mm/yyyy'});
-                
-                $("#job_tags").tagsinput({
-                    tagClass: 'label label-info',
-                    itemValue: function (item)
-                    {
-                        return item.id
-                    },
-                    itemText: function (item)
-                    {
-                        return item.name
-                    },
-                    typeahead: {
-                        afterSelect: function (val)
-                        {
-                            this.$element.val("");
-                        },
-                        source: function (query)
-                        {
-                            return $.getJSON("controller/search_tags.php", {term: query})
-                        }
-                    }
-                })
-                
-                var tags_str = $("#tag-ids").html()                
-                var tag_ids = JSON.parse(tags_str)
-                
-                for(var j in tag_ids)
-                {
-                    $("#job_tags").tagsinput('add', tag_ids[j])
-                }
-                               
-                $("#job-upload-div").uploadFile(
-                        {
-                            url: "controller/job_sb_files_upload.php",
-                            fileName: 'jobfile',
-                            uploadStr: "<i class='glyphicon glyphicon-paperclip'></i>",
-                            multiple: true,
-                            dragDrop: true,
-                            showPreview: true,
-                            showProgress: true,
-                            showDelete: true,
-                            sequential: true,
-                            dragdropWidth: 200,
-                            sequentialCount: 1,
-                            previewHeight: '100px',
-                            previewWidth: 'auto',
-                            deletelStr: '<i class="fa fa-fw fa-trash"></i>',
-                            fileCounterStyle: '. ',
-                            maxFileSize: 26214400,
-                            allowedTypes: allowed_exts,
-                            extErrorStr: ' such files are not allowed. The following are allowed - ',
-                            sizeErrorStr: 'maximum attachment size is 25MB',
-                            deleteCallback: function (data, pd)
-                            {
-                                data = JSON.parse(data)
-
-                                $.post("controller/job_sb_upl_delete.php", {name: data[0]},
-                                        function (resp, textStatus, jqXHR)
-                                        {
-
-                                        }
-                                );
-
-                                pd.statusbar.hide()
-                            },
-                            onError: function (files, status, errMsg, pd)
-                            {
-                                $(".feedback").html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Oops:</strong> Lost Connection</div>')
-                                $(".feedback").show()
-                            },
-                            onSuccess: function (files, data, xhr, pd)
-                            {
-                                var res = new String(data)
-                                if (res.substr(0, 2) == "E:")
-                                    {
-                                        $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error uploading ' + files + ':</strong> ' + res.substring(2) + '</div>')
-                                        $(".feedback").show()
-                                        pd.statusbar.hide()
-                                    }
-                            }
-                        })
-
-                $("#job_attach_files").uploadFile(
-                        {
-                            url: "controller/job_file_upload.php",
-                            fileName: 'jobfile',
-                            uploadStr: "<i class='glyphicon glyphicon-paperclip'></i>",
-                            multiple: true,
-                            dragDrop: true,
-                            showPreview: true,
-                            showProgress: true,
-                            showDelete: true,
-                            sequential: true,
-                            sequentialCount: 1,
-                            previewHeight: '100px',
-                            previewWidth: 'auto',
-                            deletelStr: '<i class="fa fa-fw fa-trash"></i>',
-                            fileCounterStyle: '. ',
-                            maxFileSize: 26214400,
-                            allowedTypes: allowed_exts,
-                            extErrorStr: ' such files are not allowed. The following are allowed - ',
-                            sizeErrorStr: 'maximum attachment size is 25MB',
-                            deleteCallback: function (data, pd)
-                            {
-                                data = JSON.parse(data)
-
-                                $.post("controller/job_file_upl_delete.php", {name: data[0]},
-                                        function (resp, textStatus, jqXHR)
-                                        {
-
-                                        }
-                                );
-
-                                pd.statusbar.hide()
-                            },
-                            onError: function (files, status, errMsg, pd)
-                            {
-                                $(".feedback").html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Oops:</strong> Lost Connection</div>')
-                                $(".feedback").show()
-                            },
-                            onSuccess: function (files, data, xhr, pd)
-                            {
-                                var res = new String(data)
-                                if (res.substr(0, 2) == "E:")
-                                    {
-                                        $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error uploading ' + files + ':</strong> ' + res.substring(2) + '</div>')
-                                        $(".feedback").show()
-                                        pd.statusbar.hide()
-                                    }
-                            }
-                        })
-                
-                $("[vec='bid-edit']").on("click", function ()
-                {
-                    var dx = $(this).attr("dx");
-                    var bid_amount = $("td[dx='" + dx + "']").find("span.bid-amount").html()
-                    var bid_text = $("td[dx='" + dx + "']").find("span.bid-comment").html()
-                    $(".edit-bid-comment").val(bid_text)
-                    $(".edit-bid-amount").val(bid_amount)
-                    $("#save-bid-edits").attr("dx", dx);
-                    $("#edit_bid_modal").modal('show')
-
-                })
-
-                $("[vec='bid-delete']").on("click", function ()
-                {
-                    var dx = $(this).attr("dx");
-                    $("#delete-bid-sb").attr("dx", dx);
-                    $("#delete_bid_modal").modal('show')
-                })
-
-                $("[vec='bid-accept']").on("click", function ()
-                {
-                    var dx = $(this).attr("dx")
-                    var bid_amount = $("td[dx='" + dx + "']").find("span.bid-amount").html()
-                    var bid_user = $("td[dx='" + dx + "']").find("span.bid-user").html()
-                    
-                    $("#bid-accept-usr").html(bid_user)
-                    $("#bid-accept-amt").html(bid_amount)
-
-                    $("#accept_bid_modal").modal('show')
-                    $("#accept-bid-sb").attr("dx", dx);
-
-                })
-                
-                $('#sbwork-rating').rating(function(vote, e)
-                {
-                    $("#rate-reaction").remove()
-                    
-                    var verdict
-                    var rate_reaction = $("<div id='rate-reaction'></div>")
-                    
-                    work_rating = vote
-                    
-                    switch(vote)
-                    {
-                        case "1":
-                            verdict = "Very Dissatisfied"
-                            rate_reaction.append("<div class='text-danger'><small>"+verdict+"</small></div><div><br><button type='button' class='btn btn-danger' id='reopen_job'>Reopen Job</button><br><small>You may reopen it for someone else to do it</small><br><br><button type='button' class='btn btn-danger' id='close_job'>Close Job</button><br><small>Payment will be finalized and job closed</small>")
-                            break
-                        case "2":
-                            verdict = "Dissatisfied"
-                            rate_reaction.append("<div class='text-warning'><small>"+verdict+"</small></div><div><br><button type='button' class='btn btn-danger' id='reopen_job'>Reopen Job</button><br><small>You may reopen it for someone else to do it</small><br><br><button type='button' class='btn btn-danger' id='close_job'>Close Job</button><br><small>Payment will be finalized and job closed</small>")
-                            break
-                        case "3":
-                            verdict = "Fair Enough"
-                            rate_reaction.append("<div class='text-info'><small>"+verdict+"</small></div><div><br><br><button type='button' class='btn btn-danger' id='close_job'>Close Job</button><br><small>Payment will be finalized and job closed</small>")
-                            break
-                        case "4":
-                            verdict = "Good"
-                            rate_reaction.append("<div class='text-primary'><small>"+verdict+"</small></div><div><br><br><button type='button' class='btn btn-danger' id='close_job'>Close Job</button><br><small>Payment will be finalized and job closed</small>")
-                            break
-                        default:
-                            verdict = "Very Good"
-                            rate_reaction.append("<div class='text-success'><small>"+verdict+"</small></div><div><br><br><button type='button' class='btn btn-danger' id='close_job'>Close Job</button><br><small>Payment will be finalized and job closed</small>")
-                    }
-                    
-                    $('#sbwork-rating').after(rate_reaction)                    
-                    
-                });
-                
-                $("#upload_sb_work").on("click", function()
-                {
-                    $.ajax({
-                        url:"controller/job_sb_conf_upload.php",
-                        type:"GET",
-                        async:true,
-                        success:function(result)
-                        {
-                            if(result == "ok")
-                            {
-                                $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong>The job owner will inspect your work and get back to you soon<br><em>Just a minute&hellip;</em></div>')
-                                $(".feedback").show()                              
-                                
-                                setTimeout(function(){ window.location.reload()}, 1500)
-                            }
-                            else
-                            {
-                                $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+result+'</div>')
-                                $(".feedback").show()
-                            }
-                            
-                        },
-                        error:function()
-                        {
-                            $(".feedback").html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Oops:</strong> Lost Connection</div>')
-                            $(".feedback").show()
-                        }
-                    })
-                })
-                
-              var options1 =
-              {
-                  complete: function (response)
-                  {
-                      if (response.responseText != "ok")
-                          {
-                              $(".feedback2").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+response.responseText+'</div>')
-                              $(".feedback2").show()
-                          }
-                      else
-                          {
-                              $(".feedback2").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong><br><em>Just a minute&hellip;</em></div>')
-                              $(".feedback2").show()
-                                
-                               setTimeout(function(){window.location.reload()}, 1500)
-                          }
-                  }
-              }
-
-                $("#job_edit_form").ajaxForm(options1)                
-                
-                $("#save-bid-edits").on("click", function()
-                {
-                    var cmt = $(".edit-bid-comment").val()
-                    var amt = $(".edit-bid-amount").val()
-                    var dx = $(this).attr("dx")
-                    
-                    $("#edit-bid-loading-gif").html("<img src='img/jx/loading5.gif'>")
-                    
-                    $.ajax({
-                        url:"controller/edit_bid.php",
-                        type:"POST",
-                        async:true,
-                        data:{cmt:cmt, amt:amt},
-                        success:function(result)
-                        {
-                            $("#edit-bid-loading-gif").empty()
-                            if(result == "ok")
-                            {
-                                $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong><br>Your edits have been applied</div>')
-                                $(".feedback").show()
-                                
-                                $("td[dx='"+dx+"']").find("span.bid-comment").html(cmt)
-                                $("td[dx='"+dx+"']").find("span.bid-amount").html(amt)
-                                
-                                $("#edit_bid_modal").modal('hide')
-                                
-                            }
-                            else
-                            {
-                                $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+result+'</div>')
-                                $(".feedback").show()
-                            }
-                        },
-                        error:function()
-                        {
-                            $("#edit-bid-loading-gif").empty()
-                            $(".feedback").html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Oops:</strong> Lost Connection</div>')
-                            $(".feedback").show()
-                        }
-                    })
-                })
-                
-                $("#delete-bid-sb").on("click", function()
-                {
-                    
-                    var dx = $(this).attr("dx")
-                    $("#delete-bid-loading-gif").html("<img src='img/jx/loading5.gif'>")
-                    
-                    $.ajax({
-                        url:"controller/delete_bid.php",
-                        type:"POST",
-                        async:true,
-                        success:function(result)
-                        {
-                            $("#delete-bid-loading-gif").empty()
-                            if(result == "ok")
-                            {
-                                $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong><br>Your edits have been applied</div>')
-                                $(".feedback").show()
-                                
-                                $("#delete_bid_modal").modal('hide')
-                                
-                                $("td[dx='"+dx+"']").slideUp()                                                                
-                            }
-                            else
-                            {
-                                $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+result+'</div>')
-                                $(".feedback").show()
-                            }
-                        },
-                        error:function()
-                        {
-                            $("#delete-bid-loading-gif").empty()
-                            $(".feedback").html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Oops:</strong> Lost Connection</div>')
-                            $(".feedback").show()
-                        }
-                    })
-                })
-                
-                $("#accept-bid-sb").on("click", function()
-                {
-                    var dx = $(this).attr("dx")
-                    
-                    $("#accept-bid-loading-gif").html("<img src='img/jx/loading5.gif'>")
-                    
-                    $.ajax({
-                        url:"controller/bid_accept.php",
-                        type:"POST",
-                        async:true,
-                        data:{dx:dx},
-                        success:function(result)
-                        {
-                            $("#accept-bid-loading-gif").empty()
-                            if(result == "ok")
-                            {
-                                $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong><br>Your edits have been applied</div>')
-                                $(".feedback").show()
-                                
-                                $("#accept_bid_modal").modal('hide')
-                            }
-                            else
-                            {
-                                $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+result+'</div>')
-                                $(".feedback").show()
-                            }
-                        },
-                        error:function()
-                        {
-                            $("#accept-bid-loading-gif").empty()
-                            $(".feedback").html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Oops:</strong> Lost Connection</div>')
-                            $(".feedback").show()
-                        }
-                    })
-                })
-                
-                $("#delete-job-conf").on("click", function()
-                {
-                    $("#delete-job-loading-gif").html("<img src='img/jx/loading5.gif'>")
-                    
-                      $.ajax({
-                        url:"controller/delete_job.php",
-                        type:"POST",
-                        async:true,
-                        success:function(result)
-                        {
-                            $("#delete-job-loading-gif").empty()
-                            $("#delete_job_modal").modal('hide')
-                            
-                            if(result == "ok")
-                            {
-                                $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong><br><em>Just a moment&hellip;</em></div>')
-                                $(".feedback").show()
-                                
-                                setTimeout(function(){window.location="home.php"}, 1500)                                                               
-                            }
-                            else
-                            {
-                                $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+result+'</div>')
-                                $(".feedback").show()
-                            }
-                        },
-                        error:function()
-                        {
-                            $("#delete-job-loading-gif").empty()
-                            $("#delete_job_modal").modal('hide')
-                            
-                            $(".feedback").html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Oops:</strong> Lost Connection</div>')
-                            $(".feedback").show()
-                        }
-                    })
-                })
-                
-                $("body").delegate("#reopen_job","click", function()
-                {                    
-                    $.ajax({
-                        url:"controller/reopen_job.php",
-                        type:"POST",
-                        async:true,
-                        data:{rating:work_rating},
-                        success:function(result)
-                        {
-                            if(result == "ok")
-                            {
-                                $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successfully reopened!: </strong><br><em>Just a moment&hellip;</em></div>')
-                                $(".feedback").show()
-                                
-                                setTimeout(function(){window.location="jobs.php"}, 1500)                                                               
-                            }
-                            else
-                            {
-                                $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+result+'</div>')
-                                $(".feedback").show()
-                            }
-                        },
-                        error:function()
-                        {
-                            $(".feedback").html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Oops:</strong> Lost Connection</div>')
-                            $(".feedback").show()
-                        }
-                    })
-                })
-                
-                $("body").delegate("#close_job", "click", function()
-                { 
-                    $.ajax({
-                        url:"controller/close_job.php",
-                        type:"POST",
-                        async:true,
-                        data:{rating:work_rating},
-                        success:function(result)
-                        {
-                            if(result == "ok")
-                            {
-                                $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successfully closed!: </strong><br><em>Just a moment&hellip;</em></div>')
-                                $(".feedback").show()
-                                
-                                setTimeout(function(){window.location="home.php"}, 1500)                                                               
-                            }
-                            else
-                            {
-                                $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+result+'</div>')
-                                $(".feedback").show()
-                            }
-                        },
-                        error:function()
-                        {
-                            $(".feedback").html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Oops:</strong> Lost Connection</div>')
-                            $(".feedback").show()
-                        }
-                    })
-                })
-                
-                $("#sb_job_create_form").on("click", function()
-                {
-                    $("#job_edit_form").trigger("submit")
-                })
-                
-                $("#new-bid-sb").on("click", function()
-                {
-                    var cmt = $(".new-bid-comment").val()
-                    var amt = $(".new-bid-amount").val()
-                                        
-                    $.ajax({
-                        url:"controller/new_bid.php",
-                        type:"POST",
-                        async:true,
-                        data:{cmt:cmt, amt:amt},
-                        success:function(result)
-                        {
-                            if(result == "ok")
-                            {
-                                $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!: </strong><br>Your bid has been submitted<br><em>Just a minute&hellip;</em></div>')
-                                $(".feedback").show()                               
-                                
-                                setTimeout(function(){window.location="jobs.php"}, 1500)
-                            }
-                            else
-                            {
-                                $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error!:</strong> '+result+'</div>')
-                                $(".feedback").show()
-                            }
-                        },
-                        error:function()
-                        {
-                            $(".feedback").html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Oops:</strong> Lost Connection</div>')
-                            $(".feedback").show()
-                        }
-                    })
-                })
-                
-                $("#open_edit_job").on("click", function()
-                {
-                    $("#edit_job_modal").modal('show')
-                })
-                
-            })
-
-      </script>
-
+    <!-- END BODY -->
+  </body>
 </html>

@@ -2,8 +2,8 @@
 
 require_once '../neuro/Access.php';
 
-if(isset($_POST))
-{
-    echo Access::Login($_POST["login_msisdn"], $_POST["login_passwd"]);    
-}
+$msi_email = filter_input(INPUT_POST, "msie");
+$passwd = filter_input(INPUT_POST, "passwd");
+$rem = filter_input(INPUT_POST, "rem");
 
+echo Access::Login($msi_email, $passwd, $rem);

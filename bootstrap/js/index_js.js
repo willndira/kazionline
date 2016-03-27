@@ -1,52 +1,83 @@
-$(function ()
-          {
-              var options =
-                      {
-                          complete: function (response)
+  /* global google */
+
+  $(function ()
+  {
+      var options =
+              {
+                  complete: function (response)
+                  {
+                      if (response.responseText !== "ok")
                           {
-                              if (response.responseText !== "ok")
-                                  {
-                                      $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error:</strong> ' + response.responseText + '</div>')
-                                      $(".feedback").show()
-                                  }
-                              else
-                                  {
-                                      $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!</strong>&nbsp; Just a moment&hellip;</div>')
-                                      $(".feedback").show()
-
-                                      setTimeout(function ()
-                                      {
-                                          window.location = "home.php"
-                                      }, 1500)
-                                  }
+                              $("#login-feedback").html('<span class="text-danger"><strong>Error:</strong> ' + response.responseText + '</span>')
                           }
-                      }
-
-              $(".login_form").ajaxForm(options)
-
-              var options2 =
-                      {
-                          complete: function (response)
+                      else
                           {
-                              if (response.responseText !== "ok")
-                                  {
-                                      $(".feedback").html('<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Error:</strong> ' + response.responseText + '</div>')
-                                      $(".feedback").show()
-                                  }
-                                  
-                              else
-                                  {
-                                      $(".feedback").html('<div class="alert alert-success" role="alert"><strong>Successful!</strong>&nbsp;Just a moment&hellip;</div>')
-                                      $(".feedback").show()
+                              $("#login-feedback").html('<span class="text-success"><strong>Successful!</strong>&nbsp; Just a moment&hellip;</div>')
 
-                                      setTimeout(function ()
-                                      {
-                                          window.location = "home.php"
-                                      }, 1500)
-                                  }
+                              setTimeout(function ()
+                              {
+                                  window.location = "home.php"
+                              }, 1500)
                           }
-                      }
+                  }
+              }
 
-              $(".reg_form").ajaxForm(options2)
+      $("#login-form").ajaxForm(options)
 
-          })
+      var options2 =
+              {
+                  complete: function (response)
+                  {
+                      if (response.responseText !== "ok")
+                          {
+                              $("#ureg-feedback").html('<span class="text-danger"><strong>Error:</strong> ' + response.responseText + '</span>')
+                          }
+                      else
+                          {
+                              $("#ureg-feedback").html('<span class="text-success"><strong>Successful!</strong>&nbsp; Just a moment&hellip;</div>')
+
+                              setTimeout(function ()
+                              {
+                                  window.location = "home.php"
+                              }, 1500)
+                          }
+                  }
+              }
+
+      $("#ureg-form").ajaxForm(options2)
+
+      var options3 =
+              {
+                  complete: function (response)
+                  {
+                      if (response.responseText !== "ok")
+                          {
+                              $("#creg-feedback").html('<span class="text-danger"><strong>Error:</strong> ' + response.responseText + '</span>')
+                          }
+                      else
+                          {
+                              $("#creg-feedback").html('<span class="text-success"><strong>Successful!</strong>&nbsp; Just a moment&hellip;</div>')
+
+                              setTimeout(function ()
+                              {
+                                  window.location = "home.php"
+                              }, 1500)
+                          }
+                  }
+              }
+
+      $("#creg-form").ajaxForm(options3)
+
+
+  })
+
+  function initialize()
+  {
+      var input = document.querySelector(".input-location")
+      new google.maps.places.Autocomplete(input)
+      
+      input = document.querySelector(".input-location2")
+      new google.maps.places.Autocomplete(input)
+  }
+  
+  google.maps.event.addDomListener(window, 'load', initialize)
