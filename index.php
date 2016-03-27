@@ -1,188 +1,305 @@
-<?php
-    require_once 'neuro/db_setup.php';
-?>
 <!DOCTYPE html>
+
 <html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>KaziOnline</title>
 
-  <head>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="">
-    <meta name="author" content="">
+  <meta content="Metronic Shop UI description" name="description">
+  <meta content="Metronic Shop UI keywords" name="keywords">
+  <meta content="keenthemes" name="author">
 
-    <title>KaziOnline</title>
+  <meta property="og:site_name" content="-CUSTOMER VALUE-">
+  <meta property="og:title" content="-CUSTOMER VALUE-">
+  <meta property="og:description" content="-CUSTOMER VALUE-">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="-CUSTOMER VALUE-"><!-- link to image for socio -->
+  <meta property="og:url" content="-CUSTOMER VALUE-">
 
-    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">    
-    <link href="bootstrap/css/metisMenu.css" rel="stylesheet">
-    <link href="bootstrap/css/dashboard_custom.css" rel="stylesheet"> 
-    <link href="font-awesome/css/font-awesome.min.css" rel="stylesheet">
-    
-    <style>
-        body
-        {
-            background-color: #ccffff;
-        }
-        .feedback
-        {
-          position: absolute;
-          top: 250px;
-          left: 300px;
-          z-index: 100000;
-        }
-        .welcome-text
-        {
-            color: #666666;
-        }
-    </style>
-
-  </head>
-  <body>
-
-    <div id="wrapper">
-      <!-- Navigation -->
-      <nav class="navbar navbar-inverse navbar-static-top" role="navigation" style="margin-bottom: 0">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="javascript:">KaziOnline</a>
+  <link rel="shortcut icon" href="favicon.ico">
+  <!-- Fonts START -->
+  <!--<link href="http://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700|Pathway+Gothic+One|PT+Sans+Narrow:400+700|Source+Sans+Pro:200,300,400,600,700,900&amp;subset=all" rel="stylesheet" type="text/css">-->
+  <!-- Fonts END -->
+  <!-- Global styles BEGIN -->
+  <link href="metronic/global/plugins/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="metronic/global/plugins/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+  <link href="metronic/global/plugins/slider-revolution-slider/rs-plugin/css/settings.css" rel="stylesheet">
+  <!-- Global styles END -->
+  <!-- Page level plugin styles BEGIN -->
+  <link href="metronic/global/plugins/fancybox/source/jquery.fancybox.css" rel="stylesheet">
+  <!-- Page level plugin styles END -->
+  <!-- Theme styles BEGIN -->
+  <link href="metronic/global/css/components.css" rel="stylesheet">
+  <link href="metronic/frontend/onepage/css/style.css" rel="stylesheet">
+  <link href="metronic/frontend/onepage/css/style-responsive.css" rel="stylesheet">
+  <link href="metronic/frontend/onepage/css/themes/blue.css" rel="stylesheet" id="style-color">
+  <link href="metronic/frontend/onepage/css/custom.css" rel="stylesheet">
+  <!-- Theme styles END -->
+  <style>
+    .item{
+        text-transform: lowercase;
+    }
+  </style>
+</head>
+<!--DOC: menu-always-on-top class to the body element to set menu on top -->
+<body>
+  <!-- Header BEGIN -->
+  <div class="header header-mobi-ext">
+    <div class="container">
+      <div class="row">
+        <!-- Logo BEGIN -->
+        <div class="col-md-2 col-sm-2">
+          <a class="scroll site-logo" href="#promo-block">KaziOnline</a>
         </div>
-
-        <ul class="nav navbar-top-links navbar-right">
-          <li class="dropdown">
-            <a class="dropdown-toggle navlink" data-toggle="dropdown" href="#">
-              <i class="fa fa-user fa-fw"></i>  <i class="fa fa-caret-down"></i>
-            </a>
-            <ul class="dropdown-menu dropdown-user">
-              <li><a href="about.php#about"><i class="fa fa-user fa-fw"></i>About Us</a>
-              </li>
-              <li><a href="about.php#contact"><i class="fa fa-user fa-fw"></i>Contact Us</a>
-              </li>
-              <li class="divider"></li>
-              <li><a href="help.php#faq"><i class="fa fa-gear fa-fw"></i>FAQs</a>
-              </li>
-              <li class="divider"></li>
-              <li><a href="help.php#terms"><i class="fa fa-sign-out fa-fw"></i>Terms &amp; Conditions</a>
-              </li>
-            </ul>            
-          </li>          
-        </ul>        
-      </nav>
-
-      <br>
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-7">
-            <form class="form-inline login_form" method="post" action="controller/login.php">
-              <div class="panel panel-info">
-                <div class="panel-heading">
-                  <strong>Have an account? Log in </strong>
-                </div>
-                <div class="panel-body">
-                  <div class="form-group">
-                    <label class="sr-only" for="login_msisdn">Mobile Number</label>
-                    <input type="text" class="form-control" name="login_msisdn" id="login_msisdn" placeholder="Mobile Number" required>
-                  </div>
-                  <div class="form-group">
-                    <label class="sr-only" for="login_passwd">Password</label>
-                    <input type="password" name="login_passwd" class="form-control" id="login_passwd" placeholder="Password" required>
-                  </div>
-                  &nbsp;&nbsp;
-                  <div class="checkbox">
-                    <label>
-                      <input type="checkbox"> Remember me
-                    </label>
-                  </div>
-                  &nbsp;&nbsp;&nbsp;<button type="submit" id="login" class="btn btn-primary">Log In</button>
-                </div>
-              </div>
-            </form>
-          </div>
+        <!-- Logo END -->
+        <a href="javascript:void(0);" class="mobi-toggler"><i class="fa fa-bars"></i></a>
+        <!-- Navigation BEGIN -->
+        <div class="col-md-10 pull-right">
+          <ul class="header-navigation">
+            <li class="current"><a href="#services">What's good?</a></li>
+            <li><a href="#facts-block">Now</a></li>
+            <li><a href="#contact">Contact Us</a></li>
+          </ul>
         </div>
-        <div class="row">          
-            <div class="col-lg-7 welcome-text">
-              <h3>Work from home</h3>
-            </div>
-          <div class="col-lg-5">
-            <form class="form-horizontal reg_form" method="post" action="controller/reg.php">
-              <div class="panel panel-info">
-                <div class="panel-heading">
-                  <strong>Sign Me Up </strong>
-                </div>
-                <div class="panel-body">
-                  <div class="form-group">                    
-                    <div class="col-sm-10 col-lg-12">
-                      <input type="text" class="form-control" name="names" id="input_names" placeholder="Names" required>
-                    </div>
-                  </div>
-                  <div class="form-group">
-                    <div class="col-sm-10 col-lg-12">
-                      <input type="text" class="form-control" name="msisdn" id="input_email" placeholder="Cell Number e.g. +254712345678" required>
-                    </div>
-                  </div>
-                  <div class="form-group">                    
-                    <div class="col-sm-10 col-lg-12">
-                      <input type="password" class="form-control" name="passwd" id="input_password1" placeholder="Password" required>
-                    </div>
-                  </div>
-                  <div class="form-group">                    
-                    <div class="col-sm-10 col-lg-12">
-                      <input type="password" class="form-control" name="passwd2" id="input_password_2" placeholder="Repeat Password" required>
-                    </div>
-                  </div>
-                  <div class="form-group">                    
-                    <div class="col-sm-10 col-lg-12">
-                      <input type="text" class="form-control" name="myloc" id="input_location" placeholder="My Location" required>
-                    </div>
-                  </div>
-                  <div class="form-group">
-                    <div class="col-sm-10 col-lg-12">
-                      <p>Sign Up <strong><u>only if</u></strong> you accept our <a href="help.php#terms">Terms &amp; Conditions</a></p>
-                    </div>
-                  </div>
-                  <div class="form-group">
-                    <div class="col-sm-10 col-lg-12">
-                      <button type="submit" id="register" class="btn btn-primary">Sign Up</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-
+        <!-- Navigation END -->
       </div>
-
-      <form class="feedback" style="display: none;">
-      </form>    
     </div>
-
-
   </div>
-
-  <script src="jquery/jquery-1.10.2.min.js"></script>   
-  <script src="bootstrap/js/bootstrap.min.js"></script>
-  <script src="jquery/jquery.form.js"></script>
-  <script src="bootstrap/js/dashboard_js.js"></script>
-  <script src="bootstrap/js/index_js.js"></script>
-  <script src="http://maps.googleapis.com/maps/api/js?sensor=false&amp;libraries=places" type="text/javascript"></script> 
+  <!-- Header END -->
+  <!-- Promo block BEGIN -->
+  <div class="promo-block" id="promo-block">
+    <div class="tp-banner-container">
+      <div class="tp-banner" >
+        <ul>
+          <li data-transition="fade" data-slotamount="5" data-masterspeed="700" data-delay="9400" class="slider-item-1">
+            <img src="metronic/frontend/onepage/img/silder/slide1.jpg" alt="" data-bgfit="cover" style="opacity:0.4 !important;" data-bgposition="center center" data-bgrepeat="no-repeat">
+            <div class="tp-caption large_text customin customout start"
+              data-x="center"
+              data-hoffset="0"
+              data-y="center"
+              data-voffset="60"
+              data-customin="x:0;y:0;z:0;rotationX:90;rotationY:0;rotationZ:0;scaleX:1;scaleY:1;skewX:0;skewY:0;opacity:0;transformPerspective:200;transformOrigin:50% 0%;"
+              data-customout="x:0;y:0;z:0;rotationX:0;rotationY:0;rotationZ:0;scaleX:0.75;scaleY:0.75;skewX:0;skewY:0;opacity:0;transformPerspective:600;transformOrigin:50% 50%;"
+              data-speed="1000"
+              data-start="500"
+              data-easing="Back.easeInOut"
+              data-endspeed="300">              
+              <div class="promo-like-text">
+                <h2>A haven for freelancers</h2>
+                <p>
+                  <a href="welcome.php#login" class="btn btn-danger" style="color: #FFFFFF;">Log In</a>
+                  <a href="welcome.php#u_sign_up" class="btn btn-primary" style="color: #FFFFFF;">Find Work</a>
+                  <a href="welcome.php#c_sign_up" class="btn btn-success" style="color: #FFFFFF;">Hire</a>
+                  <a href="jobs.php" class="btn btn-warning" style="color: #FFFFFF;">Browse Jobs</a>
+                </p>
+                
+              </div>
+            </div>
+            <div class="tp-caption large_bold_white fade"
+              data-x="center"
+              data-y="center"
+              data-voffset="-110"
+              data-speed="300"
+              data-start="1700"
+              data-easing="Power4.easeOut"
+              data-endspeed="500"
+              data-endeasing="Power1.easeIn"
+              data-captionhidden="off"
+              style="z-index: 6"><span style="color: #ff0099">Kazi</span><span>Online</span>
+            </div>
+          </li>
+          
+        </ul>
+      </div>
+    </div>
+  </div>
+  <!-- Promo block END -->
+  
+  <!-- Services block BEGIN -->
+  <div class="services-block content content-center" id="services">
+    <div class="container">
+      <h2><strong>Everything</strong></h2>
+      <h4>We have all types of jobs ready for everyone</h4>
+      <div class="row">
+        <div class="col-md-3 col-sm-3 col-xs-12 item">
+          <i class="fa fa-signal"></i>
+          <h3>Data Analytics</h3>
+          <p>Get expert data scientists<br> with great insight</p>
+        </div>
+        <div class="col-md-3 col-sm-3 col-xs-12 item">
+          <i class="fa fa-code"></i>
+          <h3>Programming</h3>
+          <p>Hire fast software programmers<br> with real skill</p>
+        </div>       
+        <div class="col-md-3 col-sm-3 col-xs-12 item">
+          <i class="fa fa-pencil"></i>
+          <h3>Writing</h3>
+          <p>Find writers whose portfolios<br> just speak for themselves</p>
+        </div>
+         <div class="col-md-3 col-sm-3 col-xs-12 item">
+          <i class="fa fa-wrench"></i>
+          <h3>Local Jobs &amp; Services</h3>
+          <p>Find local people to fix your taps, windows, gas, etc.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Services block END -->  
+  
+  <!-- Facts block BEGIN -->
+  <div class="facts-block content content-center" id="facts-block">    
+    <div class="container">
+      <div class="row">
+        <div class="col-md-3 col-sm-3 col-xs-6">
+          <div class="item" style="text-transform: uppercase;">
+            <br><span style="color: #ff0000;">+39K</span><br><br>Jobs Ready
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-3 col-xs-6">
+          <div class="item">
+            <br><span style="color: #ff0000;">KSH +200K</span><br><br>Up for grabs
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-3 col-xs-6">
+          <div class="item">
+            <br><span style="color: #ff0000;">+23K</span><br><br>Freelancers
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-3 col-xs-6">
+          <div class="item">
+            <br><span style="color: #ff0000;">KSH +4.5K</span><br><br>Companies
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Facts block END -->
+  <!-- Testimonials block BEGIN -->
+  <div class="testimonials-block content content-center margin-bottom-65">
+    <div class="container">
+      <h2>Customer <strong>testimonials</strong></h2>
+      <h4>What they say&hellip;</h4>
+      <div class="carousel slide" data-ride="carousel" id="testimonials-block">
+        <!-- Wrapper for slides -->
+        <div class="carousel-inner">
+          <!-- Carousel items -->
+          <div class="active item">
+            <blockquote>
+              <p>I make over 130K a month over here. I don't need an office job</p>
+            </blockquote>
+            <span class="testimonials-name">Samuel Mwangu</span>
+          </div>
+          <!-- Carousel items -->
+          <div class="item">
+            <blockquote>
+              <p>Real professionals who get it done quick and efficiently</p>
+            </blockquote>
+            <span class="testimonials-name">John Ananda, CEO Wrost Dev</span>
+          </div>
+          <!-- Carousel items -->
+          <div class="item">
+            <blockquote>
+              <p>I don't worry much. I only pay when satisfied with the work</p>
+            </blockquote>
+            <span class="testimonials-name">Jacky Atieno</span>
+          </div>
+        </div>
+        <!-- Indicators -->
+        <ol class="carousel-indicators">
+          <li data-target="#testimonials-block" data-slide-to="0" class="active"></li>
+          <li data-target="#testimonials-block" data-slide-to="1"></li>
+          <li data-target="#testimonials-block" data-slide-to="2"></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+  <!-- Testimonials block END -->
+  
+  <!-- BEGIN PRE-FOOTER -->
+  <div class="pre-footer" id="contact">
+    <div class="container">
+      <div class="row">
+        <!-- BEGIN BOTTOM ABOUT BLOCK -->
+        <div class="col-md-4 col-sm-6 pre-footer-col">
+          <h2>About Us</h2>
+          <p>We are a company providing freelance services to Kenya and the East African region in the future</p>          
+          <p>This platform is owned and run by KaziOnline Ltd, registered and authorized to conduct legal trade in Kenya</p>
+        </div>
+        <!-- END BOTTOM ABOUT BLOCK -->
+        <!-- BEGIN TWITTER BLOCK --> 
+        <div class="col-md-4 col-sm-6 pre-footer-col">
+          
+        </div>
+        <!-- END TWITTER BLOCK -->
+        <div class="col-md-4 col-sm-6 pre-footer-col">
+          <!-- BEGIN BOTTOM CONTACTS -->
+          <h2>Contacts Us</h2>
+          <address class="margin-bottom-20">
+            Ngong Road<br>
+            Nairobi, Kenya<br>            
+            Phone: (254) 700290354<br>
+            <a href="mailto:info@kazionline.co.ke">info@kazionline.co.ke</a>
+          </address>
+          <!-- END BOTTOM CONTACTS -->
+          
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- END PRE-FOOTER -->
+  <!-- BEGIN FOOTER -->
+  <div class="footer">
+    <div class="container">
+      <div class="row">
+        <!-- BEGIN COPYRIGHT -->
+        <div class="col-md-6 col-sm-6">
+          <div class="copyright">2016 © KaziOnline</div>
+        </div>
+        <!-- END COPYRIGHT -->
+        <!-- BEGIN SOCIAL ICONS -->
+        <div class="col-md-6 col-sm-6 pull-right">
+          <ul class="social-icons">
+            <li><a class="facebook" data-original-title="facebook" href="javascript:void(0);"></a></li>
+            <li><a class="twitter" data-original-title="twitter" href="javascript:void(0);"></a></li>            
+          </ul>
+        </div>
+        <!-- END SOCIAL ICONS -->
+      </div>
+    </div>
+  </div>
+  <!-- END FOOTER -->
+  <a href="#promo-block" class="go2top scroll"><i class="fa fa-arrow-up"></i></a>
+  <!--[if lt IE 9]>
+  <script src="metronic/global/plugins/respond.min.js"></script>
+  <![endif]-->
+  <!-- Load JavaScripts at the bottom, because it will reduce page load time -->
+  <!-- Core plugins BEGIN (For ALL pages) -->
+  <script src="metronic/global/plugins/jquery.min.js" type="text/javascript"></script>
+  <script src="metronic/global/plugins/jquery-migrate.min.js" type="text/javascript"></script>
+  <script src="metronic/global/plugins/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
+  <!-- Core plugins END (For ALL pages) -->
+  <!-- BEGIN RevolutionSlider -->
+  <script src="metronic/global/plugins/slider-revolution-slider/rs-plugin/js/jquery.themepunch.revolution.min.js" type="text/javascript"></script>
+  <script src="metronic/global/plugins/slider-revolution-slider/rs-plugin/js/jquery.themepunch.tools.min.js" type="text/javascript"></script>
+  <script src="metronic/frontend/onepage/scripts/revo-ini.js" type="text/javascript"></script> 
+  <!-- END RevolutionSlider -->
+  <!-- Core plugins BEGIN (required only for current page) -->
+  <script src="metronic/global/plugins/fancybox/source/jquery.fancybox.pack.js" type="text/javascript"></script><!-- pop up -->
+  <script src="metronic/global/plugins/jquery.easing.js"></script>
+  <script src="metronic/global/plugins/jquery.parallax.js"></script>
+  <script src="metronic/global/plugins/jquery.scrollTo.min.js"></script>
+  <script src="metronic/frontend/onepage/scripts/jquery.nav.js"></script>
+  <!-- Core plugins END (required only for current page) -->
+  <!-- Global js BEGIN -->
+  <script src="metronic/frontend/onepage/scripts/layout.js" type="text/javascript"></script>
   <script>
-      
-      function initialize() {
-                       var input = document.querySelector("#input_location")                      
-                       new google.maps.places.Autocomplete(input) 
-               }
-               google.maps.event.addDomListener(window, 'load', initialize)
-      
     $(document).ready(function() {
-        
+      Layout.init();
     });
-        
   </script>
+  <!-- Global js END -->
 </body>
 </html>

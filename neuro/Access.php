@@ -2,10 +2,11 @@
 
 require_once 'connid.php';
 require_once "security.php";
+require_once "Data.php";
 
 class Access
 {
-    public static function Login($msisdn, $password, $rem = NULL)
+    public static function Login($msisdn, $password, $rem = FALSE)
     {
         global $mysqli;
         
@@ -17,18 +18,19 @@ class Access
         
         $e_pass = Security::hash_data($password);
         
-        $res = $mysqli->query("SELECT * FROM users WHERE msisdn = '{$msisdn}' AND password = '{$e_pass}'")
+        $res = $mysqli->query("SELECT * FROM users WHERE (msisdn = '{$msisdn}' OR email='{$msisdn}') AND password = '{$e_pass}'")
                 or die($mysqli->error);
         
         if(!$res->num_rows)
-            return "<strong>Account not found.</strong><br>Phone number or password incorrect<br><strong>Tip:</strong> Make sure you've included country code in your Phone Number";
+            return "<strong>Account not found</strong><br>Phone number/Email or password incorrect<br><strong>Tip:</strong> Use country code in phone";
         
         $data = $res->fetch_assoc();
         
         if($rem)
         {
-           setcookie("lmlm_sessid", Security::cipher_encrypt($data["id"]), time() + (3600 * 24 * 21));           
+           setcookie("googol_kz_sessid", Security::cipher_encrypt($data["id"]), time() + (3600 * 24 * 21));           
         }
+        
         session_start();
         $_SESSION["sess_id"] = $data["id"];
         
@@ -41,7 +43,7 @@ class Access
     {
         global $mysqli;
         
-        if(empty($names) || empty($msisdn) || empty($p1) || empty($p2))
+        if(!Security::check_empty([$names, $msisdn, $p1, $p2, $location]))
             return "Fill out all fields";
         
         $names = Security::clean_data($names);
@@ -72,14 +74,69 @@ class Access
         $mysqli->query("INSERT INTO users (names, msisdn, password, avatar, location) VALUES ('{$names}', '{$msisdn}', '{$p1}', '{$avatar}', '{$location}')")
                 or die($mysqli->error);
         
-        $sess_id = $mysqli->insert_id;
+        $sess_id = $mysqli->insert_id;  
+        
+        $mysqli->query("INSERT INTO user_activity_log(user_id, activity_type, activity_text) "
+                . "VALUES ({$sess_id}, 1, 'You joined KaziOnline. We warmly welcome you')") or die($mysqli->error." ".__FILE__." line ".__LINE__);
+                
+        $mysqli->query("INSERT INTO user_trade_log(user_id, balance, direction) VALUES ({$sess_id}, 0, 1)") or die($mysqli->error." ".__FILE__." line ".__LINE__);
         
         session_start();
         $_SESSION["sess_id"] = $sess_id;
         
         return "ok";        
     }
+    
+    public static function regFirm($names, $email, $p1, $p2, $location)
+    {
+        global $mysqli;
+        
+        if(!Security::check_empty([$names, $email, $p1, $p2, $location]))
+            return "Fill out all fields";
+        
+        $names = Security::clean_data($names);
+        $email = Security::clean_data($email);
+        $p1 = Security::clean_data($p1);
+        $p2 = Security::clean_data($p2);
+        $location = Security::clean_data($location);
+        
+        //validate names       
+        if(strlen($names) < 6)
+            return "Name is too short. Atleast 7 characters";            
+        
+        //validate email
+        if(!Security::check_email($email))
+            return "Please enter a valid email address";
+        
+        if(Data::email_exists($email))
+            return "That email is already in use here";
+        
+        if(strlen($p1) <= 6)
+            return "Password too short. Atleast 7 characters";
+                
+        if(strcmp($p1, $p2))
+             return "Passwords do not match";
+        
+        $p1 = Security::hash_data($p1);
+        
+        $avatar = "img/avatars/default_company_logo.png";
+        
+        $mysqli->query("INSERT INTO users (names, email, password, avatar, location, user_type) VALUES ('{$names}', '{$email}', '{$p1}', '{$avatar}', '{$location}', 2)")
+                or die($mysqli->error." ".__FILE__." line ".__LINE__);
+        
+        $sess_id = $mysqli->insert_id;
 
+        $mysqli->query("INSERT INTO user_activity_log(user_id, activity_type, activity_text) "
+                . "VALUES ({$sess_id}, 1, 'You joined KaziOnline. We warmly welcome you')") or die($mysqli->error." ".__FILE__." line ".__LINE__);
+                
+        $mysqli->query("INSERT INTO user_trade_log(user_id, balance, direction) VALUES ({$sess_id}, 0, 1)") or die($mysqli->error." ".__FILE__." line ".__LINE__);
+        
+        session_start();
+        $_SESSION["sess_id"] = $sess_id;
+        
+        return "ok";        
+    }
+    
     public static function check_cookie()
     {
         $sess = filter_input(INPUT_COOKIE, 'googol_kz_sessid');
