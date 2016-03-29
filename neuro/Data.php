@@ -79,7 +79,7 @@ class Data
         {
             if($notif["is_read"] == 0) $unread++;
             
-            $notifications[] = ["msg"=>$notif["msg"], "is_read"=>$notif["is_read"], "type"=>$notif["notif_type"], "time"=>Jobs::time_gap($notif["ustamp"])];
+            $notifications[] = ["msg"=>$notif["msg"], "is_read"=>$notif["is_read"], "type"=>$notif["notif_type"], "time"=>self::time_gap($notif["ustamp"])];
         }
         
         $res->close();
@@ -132,7 +132,7 @@ class Data
             strlen($bid["title"]) > 30 ? $short_title.="&hellip;":"";
             $job_link = "<a href='job.php?job={$bid["job_id"]}'>{$short_title}</a>";
             
-            $tasks [] = ["type"=>"1", "stamp"=>$bid["awst"], "time"=>$bid["due_in"], "text"=>"Job {$job_link} is due ".self::due_in_gap($bid["due_in"])];
+            $tasks [] = ["type"=>"1", "desc"=>"Due for submission", "stamp"=>$bid["awst"], "time"=>$bid["due_in"], "text"=>"Job {$job_link} is due ".self::due_in_gap($bid["due_in"])];
         }
         
         $res_jb->close();
@@ -146,11 +146,14 @@ class Data
         
         while($data_ab = $res_ab->fetch_assoc())
         {
+            if($data_ab["bid_num"] == 0)
+                continue;
+            
             $short_title = substr($data_ab["title"], 0, 30);
             strlen($data_ab["title"]) > 30 ? $short_title.="&hellip;":"";
             $job_link = "<a href='job.php?job={$data_ab["job_id"]}'>{$short_title}</a>";
             
-            $tasks[] = ["type"=>"2", "stamp"=>$data_ab["ustamp"], "text"=>"Job {$job_link} has received {$data_ab["bid_num"]} bids, waiting for your approval"];
+            $tasks[] = ["type"=>"2", "desc"=>"Look through the bids", "stamp"=>$data_ab["ustamp"], "text"=>"Job {$job_link} has received {$data_ab["bid_num"]} bids, waiting for your approval"];
         }
         
         $res_ab->close();
@@ -169,7 +172,7 @@ class Data
             strlen($insp["title"]) > 30 ? $short_title.="&hellip;":"";
             $job_link = "<a href='job.php?job={$insp["id"]}'>{$short_title}</a>";
             
-            $tasks[] = ["type"=>"3", "stamp"=>$insp["ustamp"], "text"=>"{$insp["names"]} has completed his work for {$job_link}, pending your confirmation"];
+            $tasks[] = ["type"=>"3", "desc"=>"Inspect submitted work", "stamp"=>$insp["ustamp"], "text"=>"{$insp["names"]} has completed his work for {$job_link}, pending your confirmation"];
         }
         
         $res_i->close();
@@ -249,12 +252,7 @@ class Data
     
     public static function get_activity_types()
     {
-        /*
-         * we do not expect this function to ever be called
-         * this is just show activity types plus descriptions
-         */
-        
-        $types = ["1"=>"user registration",
+        /*$types = ["1"=>"user registration",
                   "2"=>"posting job",
                   "3"=>"bid for job",
                   "4"=>"awarded bid",
@@ -264,8 +262,22 @@ class Data
                   "8"=>"closed job",
                   "9"=>"reopened job",
                   "10"=>"deleted job"];
+         * 
+         */
         
-        return $types;
+        
+        $activity_icons = ["1"=>"icon-user", 
+                           "2"=>"icon-paper-plane",
+                           "3"=>"icon-star",
+                           "4"=>"icon-present",
+                           "5"=>"icon-bubbles",
+                           "6"=>"fa fa-fw fa-money",
+                           "7"=>"icon-heart",
+                           "8"=>"icon-power",
+                           "9"=>"icon-reload",
+                           "10"=>"icon-trash"];
+        
+        return $activity_icons;
     }
     
     public static function get_me_jobs_bids_count($user_id)
@@ -434,6 +446,8 @@ class Data
         $y_axis = [];
         $y_axis[] = 0; //y-axis always starts with 0
         
+        $data_1st["max_bal"] = $data_1st["max_bal"] <= 100 ? 900:$data_1st["max_bal"];
+        
         $y_max = (100/85) * $data_1st["max_bal"];
         $r = round(($y_max/5));
         
@@ -452,6 +466,8 @@ class Data
         $chat_list = [];
         $threads = [];
         $pal_unread = [];
+        $loaded_messages = [];
+        $pal_data = [];
         
         $unread = 0;
                 
@@ -461,9 +477,12 @@ class Data
         
         while($data = $res->fetch_assoc())
         {
+            /*
             if(in_array($data["sender"], $chat_list) || in_array($data["recep"], $chat_list))
                 continue;
-                                    
+            */
+            $loaded_messages[] = $data["id"];
+            
             $pal = 0;
                 
             if($data["sender"] == $user_id)
@@ -471,7 +490,12 @@ class Data
             else
                 $pal = $data["sender"];
             
-            $chat_list[] = $pal;
+            if(!array_key_exists($pal, $chat_list))
+            {
+                $pal_data[$pal] = self::user_data($pal);
+            }
+                        
+            $chat_list[] = $pal;            
             
             if(!isset($pal_unread[$pal]))
                 $pal_unread[$pal] = 0;
@@ -482,7 +506,7 @@ class Data
                 $pal_unread[$pal]++;
             }
             
-            $threads[$pal][] = ["usr"=>self::user_data($data["sender"]), "msg"=>$data["msg"], "read"=>$data["read_flag"],
+            $threads[$pal][] = ["usr"=>self::user_data($data["sender"]), "is_me"=>($data["sender"] == $user_id ? 1:0), "msg"=>$data["msg"], "read"=>$data["read_flag"],
                                 "time"=>self::time_gap($data["ustamp"]), "stamp"=>$data["ustamp"]];
             
         }
@@ -502,10 +526,10 @@ class Data
             array_multisort($stamps, SORT_ASC, SORT_NUMERIC, $conv);
             
             $threads[$pal] = $conv;
-        }
+        }      
         
-                        
-        return ["threads"=>$threads, "pal_unread"=>$pal_unread, "total_unread"=>$unread];
+        return ["threads"=>$threads, "pal_unread"=>$pal_unread, "total_unread"=>$unread, "loaded"=>$loaded_messages,
+                "pal_data"=>$pal_data];
     }
     
     public static function delete_chat($p1, $p2)
@@ -570,7 +594,19 @@ class Data
         return $gap;        
     }
     
-    
+    public static function get_disp_name($name)
+    {
+        $p = preg_split("/\s/", $name);
+        $n = "";
+        if($p[0])        
+            $n = $p[0];            
+        
+        else
+            $n = $name;
+        
+        return strlen($n) > 12 ? substr($n, 0, 12) : $n;
+        
+    }
     
 }
 

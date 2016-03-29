@@ -14,10 +14,15 @@ $me = Data::user_data($_SESSION["sess_id"]);
 $me_jobs_count = Data::get_me_jobs_bids_count($_SESSION["sess_id"]);
 $me_trade = Data::get_me_trade($_SESSION["sess_id"]);
 $my_tasks = Data::load_tasks($_SESSION["sess_id"]);
-$actvity_log = Data::load_activity_log($_SESSION["sess_id"]);
+$activity_log = Data::load_activity_log($_SESSION["sess_id"]);
 $notifications = Data::load_notifications($_SESSION["sess_id"]);
 $trade_chart = Data::get_trade_chart($_SESSION["sess_id"]);
 $chats = Data::load_chats($_SESSION["sess_id"]);
+$activity_icons = Data::get_activity_types();
+
+$_SESSION["loaded_chat_messages"] = $chats["loaded"];
+$_SESSION["loaded_chat_threads"] = $chats["threads"];
+
 
 //prevent possible division by 0
 $me_div = 1;
@@ -107,107 +112,46 @@ $me_growth = ceil($me_trade / ($me_div)) * 100;
             <li class="dropdown dropdown-extended dropdown-notification" id="header_notification_bar">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-close-others="true">
                 <i class="icon-bell"></i>
-                <span class="badge badge-default">
-                  7 </span>
+                <?php
+                if ($notifications["unread"] > 0)
+                {
+                    ?>
+                    <span class="badge badge-default">
+                      <?= $notifications["unread"] ?> </span>
+                    <?php
+                }
+                ?>
               </a>
               <ul class="dropdown-menu">
                 <li class="external">
-                  <h3><span class="bold">12 pending</span> notifications</h3>
-                  <a href="#">view all</a>
+                  <h3><span class="bold"><?= $notifications["unread"] ?></span> notifications</h3>                  
                 </li>
                 <li>
-                  <div class="slimScrollDiv" style="position: relative; overflow: hidden; width: auto; height: 250px;"><ul class="dropdown-menu-list scroller" style="height: 250px; overflow: hidden; width: auto;" data-handle-color="#637283" data-initialized="1">
-                      <li>
-                        <a href="javascript:;">
-                          <span class="time">just now</span>
-                          <span class="details">
-                            <span class="label label-sm label-icon label-success">
-                              <i class="fa fa-plus"></i>
-                            </span>
-                            New user registered. </span>
-                        </a>
-                      </li>
-                      <li>
-                        <a href="javascript:;">
-                          <span class="time">3 mins</span>
-                          <span class="details">
-                            <span class="label label-sm label-icon label-danger">
-                              <i class="fa fa-bolt"></i>
-                            </span>
-                            Server #12 overloaded. </span>
-                        </a>
-                      </li>
-                      <li>
-                        <a href="javascript:;">
-                          <span class="time">10 mins</span>
-                          <span class="details">
-                            <span class="label label-sm label-icon label-warning">
-                              <i class="fa fa-bell-o"></i>
-                            </span>
-                            Server #2 not responding. </span>
-                        </a>
-                      </li>
-                      <li>
-                        <a href="javascript:;">
-                          <span class="time">14 hrs</span>
-                          <span class="details">
-                            <span class="label label-sm label-icon label-info">
-                              <i class="fa fa-bullhorn"></i>
-                            </span>
-                            Application error. </span>
-                        </a>
-                      </li>
-                      <li>
-                        <a href="javascript:;">
-                          <span class="time">2 days</span>
-                          <span class="details">
-                            <span class="label label-sm label-icon label-danger">
-                              <i class="fa fa-bolt"></i>
-                            </span>
-                            Database overloaded 68%. </span>
-                        </a>
-                      </li>
-                      <li>
-                        <a href="javascript:;">
-                          <span class="time">3 days</span>
-                          <span class="details">
-                            <span class="label label-sm label-icon label-danger">
-                              <i class="fa fa-bolt"></i>
-                            </span>
-                            A user IP blocked. </span>
-                        </a>
-                      </li>
-                      <li>
-                        <a href="javascript:;">
-                          <span class="time">4 days</span>
-                          <span class="details">
-                            <span class="label label-sm label-icon label-warning">
-                              <i class="fa fa-bell-o"></i>
-                            </span>
-                            Storage Server #4 not responding dfdfdfd. </span>
-                        </a>
-                      </li>
-                      <li>
-                        <a href="javascript:;">
-                          <span class="time">5 days</span>
-                          <span class="details">
-                            <span class="label label-sm label-icon label-info">
-                              <i class="fa fa-bullhorn"></i>
-                            </span>
-                            System Error. </span>
-                        </a>
-                      </li>
-                      <li>
-                        <a href="javascript:;">
-                          <span class="time">9 days</span>
-                          <span class="details">
-                            <span class="label label-sm label-icon label-danger">
-                              <i class="fa fa-bolt"></i>
-                            </span>
-                            Storage server failed. </span>
-                        </a>
-                      </li>
-                    </ul><div class="slimScrollBar" style="width: 7px; position: absolute; top: 0px; opacity: 0.4; display: none; border-radius: 7px; z-index: 99; right: 1px; height: 121.359px; background: rgb(99, 114, 131);"></div><div class="slimScrollRail" style="width: 7px; height: 100%; position: absolute; top: 0px; display: none; border-radius: 7px; opacity: 0.2; z-index: 90; right: 1px; background: rgb(234, 234, 234);"></div></div>
+                  <div class="slimScrollDiv" style="position: relative; overflow: hidden; width: auto; height: auto;"><ul class="dropdown-menu-list scroller" style="height: auto; overflow: hidden; width: auto;" data-handle-color="#637283" data-initialized="1">
+
+                      <?php
+                      if (count($notifications["notifications"]) == 0)
+                          echo '<li><a href="javascript:;">No new notifications</a></li>';
+
+                      foreach (array_slice($notifications["notifications"], 0, 4) as $notif)
+                      {
+                          ?>                      
+                          <li>
+                            <a href="javascript:;">
+                              <span class="time"><?= $notif["time"] ?></span>
+                              <span class="details">
+                                <span class="label label-sm label-icon label-info">
+                                  <i class="<?= $activity_icons[$notif["notif_type"]] ?>"></i>
+                                </span>
+    <?= substr($notif["msg"], 0, strpos($notif["msg"], "!")) ?></span>
+                            </a>
+                          </li>
+    <?php
+}
+?>
+
+                    </ul>
+                    <div class="slimScrollBar" style="width: 7px; position: absolute; top: 0px; opacity: 0.4; display: none; border-radius: 7px; z-index: 99; right: 1px; height: 121.359px; background: rgb(99, 114, 131);"></div><div class="slimScrollRail" style="width: 7px; height: 100%; position: absolute; top: 0px; display: none; border-radius: 7px; opacity: 0.2; z-index: 90; right: 1px; background: rgb(234, 234, 234);"></div></div>
                 </li>
               </ul>
             </li>
@@ -216,86 +160,53 @@ $me_growth = ceil($me_trade / ($me_div)) * 100;
             <li class="dropdown dropdown-extended dropdown-inbox" id="header_inbox_bar">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-close-others="true" aria-expanded="false">
                 <i class="icon-bubbles"></i>
-                <span class="badge badge-danger">
-                  4 </span>
+<?php
+if ($chats["total_unread"] > 0)
+{
+    ?>
+                    <span class="badge badge-danger chats_total_unread_1"><?= $chats["total_unread"] ?></span>
+                    <?php
+                } else
+                {
+                    echo '<span class="badge badge-danger chats_total_unread_1" style="display:none;"></span>';
+                }
+                ?>
               </a>
               <ul class="dropdown-menu">
                 <li class="external">
-                  <h3>You have <span class="bold">7 New</span> Messages</h3>
-                  <a href="#">view all</a>
+                  <h3><span class="bold"><span class="chats_total_unread_2"><?= $chats["total_unread"] > 0 ? $chats["total_unread"] : "no" ?></span> new</span> messages</h3>
+                  <a href="javascript:;" id="nav_see_all_chats">See all</a>
                 </li>
                 <li>
-                  <div class="slimScrollDiv" style="position: relative; overflow: hidden; width: auto; height: 275px;"><ul class="dropdown-menu-list scroller" style="height: 275px; overflow: hidden; width: auto;" data-handle-color="#637283" data-initialized="1">
-                      <li>
-                        <a href="inbox.html?a=view">
-                          <span class="photo">
-                            <img src="metronic/admin/layout3/img/avatar2.jpg" class="img-circle" alt="">
-                          </span>
-                          <span class="subject">
-                            <span class="from">
-                              Lisa Wong </span>
-                            <span class="time">Just Now </span>
-                          </span>
-                          <span class="message">
-                            Vivamus sed auctor nibh congue nibh. auctor nibh auctor nibh... </span>
-                        </a>
-                      </li>
-                      <li>
-                        <a href="inbox.html?a=view">
-                          <span class="photo">
-                            <img src="metronic/admin/layout3/img/avatar3.jpg" class="img-circle" alt="">
-                          </span>
-                          <span class="subject">
-                            <span class="from">
-                              Richard Doe </span>
-                            <span class="time">16 mins </span>
-                          </span>
-                          <span class="message">
-                            Vivamus sed congue nibh auctor nibh congue nibh. auctor nibh auctor nibh... </span>
-                        </a>
-                      </li>
-                      <li>
-                        <a href="inbox.html?a=view">
-                          <span class="photo">
-                            <img src="metronic/admin/layout3/img/avatar1.jpg" class="img-circle" alt="">
-                          </span>
-                          <span class="subject">
-                            <span class="from">
-                              Bob Nilson </span>
-                            <span class="time">2 hrs </span>
-                          </span>
-                          <span class="message">
-                            Vivamus sed nibh auctor nibh congue nibh. auctor nibh auctor nibh... </span>
-                        </a>
-                      </li>
-                      <li>
-                        <a href="inbox.html?a=view">
-                          <span class="photo">
-                            <img src="metronic/admin/layout3/img/avatar2.jpg" class="img-circle" alt="">
-                          </span>
-                          <span class="subject">
-                            <span class="from">
-                              Lisa Wong </span>
-                            <span class="time">40 mins </span>
-                          </span>
-                          <span class="message">
-                            Vivamus sed auctor 40% nibh congue nibh... </span>
-                        </a>
-                      </li>
-                      <li>
-                        <a href="inbox.html?a=view">
-                          <span class="photo">
-                            <img src="metronic/admin/layout3/img/avatar3.jpg" class="img-circle" alt="">
-                          </span>
-                          <span class="subject">
-                            <span class="from">
-                              Richard Doe </span>
-                            <span class="time">46 mins </span>
-                          </span>
-                          <span class="message">
-                            Vivamus sed congue nibh auctor nibh congue nibh. auctor nibh auctor nibh... </span>
-                        </a>
-                      </li>
+                  <div class="slimScrollDiv" style="position: relative; overflow: hidden; width: auto; height: auto;"><ul class="dropdown-menu-list scroller" style="height: auto; overflow: hidden; width: auto;" data-handle-color="#637283" data-initialized="1">
+<?php
+foreach (array_slice($chats["threads"], 0, 3) as $pal => $thread)
+{
+    $ud = Data::user_data($pal);
+    ?>
+                          <li>
+                            <a href="javascript:;" class="open-conv" dx="<?= $pal ?>">
+                              <span class="photo">
+                                <img src="<?= $ud["avatar"] ?>" class="img-circle" alt="">
+                              </span>
+                              <span class="subject">
+                                <span class="from">
+    <?= $ud["names"] ?> </span>
+                                <span class="time"><?= $ud["time"] ?></span>
+                              </span>
+                              <span class="message">
+                                  <?php
+                                  if (strlen($thread[0]["msg"]) > 30)
+                                      echo substr($thread[0]["msg"], 0, 30) . "&hellip;";
+                                  else
+                                      echo $thread[0]["msg"];
+                                  ?>
+                              </span>
+                            </a>
+                          </li>
+                                  <?php
+                              }
+                              ?>                      
                     </ul><div class="slimScrollBar" style="width: 7px; position: absolute; top: 0px; opacity: 0.4; display: none; border-radius: 7px; z-index: 99; right: 1px; height: 159.211px; background: rgb(99, 114, 131);"></div><div class="slimScrollRail" style="width: 7px; height: 100%; position: absolute; top: 0px; display: none; border-radius: 7px; opacity: 0.2; z-index: 90; right: 1px; background: rgb(234, 234, 234);"></div></div>
                 </li>
               </ul>
@@ -306,93 +217,40 @@ $me_growth = ceil($me_trade / ($me_div)) * 100;
             <li class="dropdown dropdown-extended dropdown-tasks" id="header_task_bar">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-close-others="true" aria-expanded="false">
                 <i class="icon-calendar"></i>
-                <span class="badge badge-primary">
-                  3 </span>
+<?php
+if (count($my_tasks) > 0)
+{
+    ?>
+                    <span class="badge badge-primary">
+                    <?= count($my_tasks) ?>
+                    </span>
+                    <?php
+                } else
+                {
+                    echo '<span class="badge badge-primary"></span>';
+                }
+                ?>
               </a>
               <ul class="dropdown-menu extended tasks">
                 <li class="external">
-                  <h3>You have <span class="bold">12 pending</span> tasks</h3>
-                  <a href="#">view all</a>
+                  <h3><span class="bold"><?= count($my_tasks) > 0 ? count($my_tasks) : "no" ?> pending</span> tasks</h3>                  
                 </li>
                 <li>
-                  <div class="slimScrollDiv" style="position: relative; overflow: hidden; width: auto; height: 275px;"><ul class="dropdown-menu-list scroller" style="height: 275px; overflow: hidden; width: auto;" data-handle-color="#637283" data-initialized="1">
-                      <li>
-                        <a href="javascript:;">
-                          <span class="task">
-                            <span class="desc">New release v1.2 </span>
-                            <span class="percent">30%</span>
-                          </span>
-                          <span class="progress">
-                            <span style="width: 40%;" class="progress-bar progress-bar-success" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"><span class="sr-only">40% Complete</span></span>
-                          </span>
-                        </a>
-                      </li>
-                      <li>
-                        <a href="javascript:;">
-                          <span class="task">
-                            <span class="desc">Application deployment</span>
-                            <span class="percent">65%</span>
-                          </span>
-                          <span class="progress">
-                            <span style="width: 65%;" class="progress-bar progress-bar-danger" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100"><span class="sr-only">65% Complete</span></span>
-                          </span>
-                        </a>
-                      </li>
-                      <li>
-                        <a href="javascript:;">
-                          <span class="task">
-                            <span class="desc">Mobile app release</span>
-                            <span class="percent">98%</span>
-                          </span>
-                          <span class="progress">
-                            <span style="width: 98%;" class="progress-bar progress-bar-success" aria-valuenow="98" aria-valuemin="0" aria-valuemax="100"><span class="sr-only">98% Complete</span></span>
-                          </span>
-                        </a>
-                      </li>
-                      <li>
-                        <a href="javascript:;">
-                          <span class="task">
-                            <span class="desc">Database migration</span>
-                            <span class="percent">10%</span>
-                          </span>
-                          <span class="progress">
-                            <span style="width: 10%;" class="progress-bar progress-bar-warning" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"><span class="sr-only">10% Complete</span></span>
-                          </span>
-                        </a>
-                      </li>
-                      <li>
-                        <a href="javascript:;">
-                          <span class="task">
-                            <span class="desc">Web server upgrade</span>
-                            <span class="percent">58%</span>
-                          </span>
-                          <span class="progress">
-                            <span style="width: 58%;" class="progress-bar progress-bar-info" aria-valuenow="58" aria-valuemin="0" aria-valuemax="100"><span class="sr-only">58% Complete</span></span>
-                          </span>
-                        </a>
-                      </li>
-                      <li>
-                        <a href="javascript:;">
-                          <span class="task">
-                            <span class="desc">Mobile development</span>
-                            <span class="percent">85%</span>
-                          </span>
-                          <span class="progress">
-                            <span style="width: 85%;" class="progress-bar progress-bar-success" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100"><span class="sr-only">85% Complete</span></span>
-                          </span>
-                        </a>
-                      </li>
-                      <li>
-                        <a href="javascript:;">
-                          <span class="task">
-                            <span class="desc">New UI release</span>
-                            <span class="percent">38%</span>
-                          </span>
-                          <span class="progress progress-striped">
-                            <span style="width: 38%;" class="progress-bar progress-bar-important" aria-valuenow="18" aria-valuemin="0" aria-valuemax="100"><span class="sr-only">38% Complete</span></span>
-                          </span>
-                        </a>
-                      </li>
+                  <div class="slimScrollDiv" style="position: relative; overflow: hidden; width: auto; height: auto;"><ul class="dropdown-menu-list scroller" style="height: auto; overflow: hidden; width: auto;" data-handle-color="#637283" data-initialized="1">
+<?php
+foreach (array_slice($my_tasks, 0, 3) as $task)
+{
+    ?>
+                          <li>
+                            <a href="javascript:;">
+                              <span class="task">
+                                <span class="desc"><?= strlen($task["text"]) > 30 ? substr($task["text"], 0, 30) . "&hellip;" : $task["text"] ?></span>                            
+                              </span>                          
+                            </a>
+                          </li>
+    <?php
+}
+?>                      
                     </ul><div class="slimScrollBar" style="width: 7px; position: absolute; top: 0px; opacity: 0.4; display: none; border-radius: 7px; z-index: 99; right: 1px; height: 148.284px; background: rgb(99, 114, 131);"></div><div class="slimScrollRail" style="width: 7px; height: 100%; position: absolute; top: 0px; display: none; border-radius: 7px; opacity: 0.2; z-index: 90; right: 1px; background: rgb(234, 234, 234);"></div></div>
                 </li>
               </ul>
@@ -401,9 +259,10 @@ $me_growth = ceil($me_trade / ($me_div)) * 100;
             <!-- BEGIN USER LOGIN DROPDOWN -->
             <li class="dropdown dropdown-user">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-close-others="true" aria-expanded="false">
-                <img alt="" class="img-circle" src="metronic/admin/layout/img/avatar3_small.jpg">
+                <img alt="" class="img-circle" id="user-prof-pic" src="<?= $me["avatar"] ?>">
                 <span class="username username-hide-on-mobile">
-                  Nick </span>
+<?= Data::get_disp_name($me["names"]) ?>
+                </span>
                 <i class="fa fa-angle-down"></i>
               </a>
               <ul class="dropdown-menu dropdown-menu-default">
@@ -439,7 +298,7 @@ $me_growth = ceil($me_trade / ($me_div)) * 100;
             <!-- END USER LOGIN DROPDOWN -->
             <!-- BEGIN QUICK SIDEBAR TOGGLER -->
             <li class="dropdown dropdown-quick-sidebar-toggler">
-              <a href="javascript:;" class="dropdown-toggle">
+              <a href="javascript:;" class="dropdown-toggle" id="chats-side-swipe">
                 <i class="icon-logout"></i>
               </a>
             </li>
@@ -618,7 +477,7 @@ $me_growth = ceil($me_trade / ($me_div)) * 100;
                 </div>
                 <div class="details">
                   <div class="number">
-                      <?= Data::custom_number_format($me_jobs_count[0]) ?>
+<?= Data::custom_number_format($me_jobs_count[0]) ?>
                   </div>
                   <div class="desc">
                     Jobs
@@ -636,7 +495,7 @@ $me_growth = ceil($me_trade / ($me_div)) * 100;
                 </div>
                 <div class="details">
                   <div class="number">
-                      <?= Data::custom_number_format($me_jobs_count[1]) ?>
+<?= Data::custom_number_format($me_jobs_count[1]) ?>
                   </div>
                   <div class="desc">
                     Bids
@@ -654,7 +513,7 @@ $me_growth = ceil($me_trade / ($me_div)) * 100;
                 </div>
                 <div class="details">
                   <div class="number">
-                    <?= Data::custom_number_format($me_trade) ?>/-
+<?= Data::custom_number_format($me_trade) ?>/-
                   </div>
                   <div class="desc">
                     Trade
@@ -694,331 +553,90 @@ $me_growth = ceil($me_trade / ($me_div)) * 100;
                   <div class="caption">
                     <i class="fa fa-bell-o"></i> Notifications
                   </div>
-                  <div class="tools">                    
-                    <a href="" class="reload" data-original-title="" title="">
-                    </a>
+                  <div class="tools">
                     <a href="javascript:;" class="fullscreen" data-original-title="" title="">
                     </a>
                   </div>                  
                 </div>
                 <div class="portlet-body">
-                  <div class="slimScrollDiv" style="position: relative; overflow: hidden; width: auto; height: 300px;"><div class="scroller" style="height: 300px; overflow: hidden; width: auto;" data-always-visible="1" data-rail-visible="0" data-initialized="1">
+                  <div class="slimScrollDiv" style="position: relative; overflow: hidden; width: auto; height: auto;"><div class="scroller" style="height: auto; overflow: hidden; width: auto;" data-always-visible="1" data-rail-visible="0" data-initialized="1">
                       <ul class="feeds">
-                        <li>
+<?php
+if (count($notifications["notifications"]) == 0)
+{
+    echo '<li>
                           <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-info">
-                                  <i class="fa fa-check"></i>
-                                </div>
-                              </div>
+                            <div class="cont">                              
                               <div class="cont-col2">
                                 <div class="desc">
-                                  You have 4 pending tasks. <span class="label label-sm label-warning ">
-                                    Take action <i class="fa fa-share"></i>
+                                  No notifications yet
                                   </span>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              Just now
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <a href="#">
-                            <div class="col1">
-                              <div class="cont">
-                                <div class="cont-col1">
-                                  <div class="label label-sm label-success">
-                                    <i class="fa fa-bar-chart-o"></i>
+                          </div>                          
+                        </li>';
+}
+
+foreach (array_slice($notifications["notifications"], 0, 9) as $notif)
+{
+    ?>
+                            <li>
+                              <div class="col1">
+                                <div class="cont">
+                                  <div class="cont-col1">
+                                    <div class="label label-sm label-info">
+                                      <i class="<?= $activity_icons[$notif["notif_type"]] ?>"></i>
+                                    </div>
                                   </div>
-                                </div>
-                                <div class="cont-col2">
-                                  <div class="desc">
-                                    Finance Report for year 2013 has been released.
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            <div class="col2">
-                              <div class="date">
-                                20 mins
-                              </div>
-                            </div>
-                          </a>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-danger">
-                                  <i class="fa fa-user"></i>
-                                </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  You have 5 pending membership that requires a quick review.
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              24 mins
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-info">
-                                  <i class="fa fa-shopping-cart"></i>
-                                </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  New order received with <span class="label label-sm label-success">
-                                    Reference Number: DR23923 </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              30 mins
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-success">
-                                  <i class="fa fa-user"></i>
-                                </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  You have 5 pending membership that requires a quick review.
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              24 mins
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-default">
-                                  <i class="fa fa-bell-o"></i>
-                                </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  Web server hardware needs to be upgraded. <span class="label label-sm label-default ">
-                                    Overdue </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              2 hours
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <a href="#">
-                            <div class="col1">
-                              <div class="cont">
-                                <div class="cont-col1">
-                                  <div class="label label-sm label-default">
-                                    <i class="fa fa-briefcase"></i>
-                                  </div>
-                                </div>
-                                <div class="cont-col2">
-                                  <div class="desc">
-                                    IPO Report for year 2013 has been released.
+                                  <div class="cont-col2">
+                                    <div class="desc">
+    <?= $notif["msg"] ?>
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                            <div class="col2">
-                              <div class="date">
-                                20 mins
-                              </div>
-                            </div>
-                          </a>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-info">
-                                  <i class="fa fa-check"></i>
+                              <div class="col2">
+                                <div class="date">
+    <?= $notif["time"] ?>
                                 </div>
                               </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  You have 4 pending tasks. <span class="label label-sm label-warning ">
-                                    Take action <i class="fa fa-share"></i>
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              Just now
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <a href="#">
-                            <div class="col1">
-                              <div class="cont">
-                                <div class="cont-col1">
-                                  <div class="label label-sm label-danger">
-                                    <i class="fa fa-bar-chart-o"></i>
+                            </li>
+    <?php
+}
+foreach (array_slice($notifications["notifications"], 9) as $xnotif)
+{
+    ?>
+                            <li style="display: none;" class="xtra-notif">                          
+                              <div class="col1">
+                                <div class="cont">
+                                  <div class="cont-col1">
+                                    <div class="label label-sm label-success">
+                                      <i class="<?= $activity_icons[$xnotif["notif_type"]] ?>"></i>
+                                    </div>
                                   </div>
-                                </div>
-                                <div class="cont-col2">
-                                  <div class="desc">
-                                    Finance Report for year 2013 has been released.
+                                  <div class="cont-col2">
+                                    <div class="desc">
+    <?= $xnotif["msg"] ?>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                            <div class="col2">
-                              <div class="date">
-                                20 mins
-                              </div>
-                            </div>
-                          </a>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-default">
-                                  <i class="fa fa-user"></i>
+                              <div class="col2">
+                                <div class="date">
+                                        <?= $xnotif["time"] ?>
                                 </div>
                               </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  You have 5 pending membership that requires a quick review.
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              24 mins
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-info">
-                                  <i class="fa fa-shopping-cart"></i>
-                                </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  New order received with <span class="label label-sm label-success">
-                                    Reference Number: DR23923 </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              30 mins
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-success">
-                                  <i class="fa fa-user"></i>
-                                </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  You have 5 pending membership that requires a quick review.
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              24 mins
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-warning">
-                                  <i class="fa fa-bell-o"></i>
-                                </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  Web server hardware needs to be upgraded. <span class="label label-sm label-default ">
-                                    Overdue </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              2 hours
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <a href="#">
-                            <div class="col1">
-                              <div class="cont">
-                                <div class="cont-col1">
-                                  <div class="label label-sm label-info">
-                                    <i class="fa fa-briefcase"></i>
-                                  </div>
-                                </div>
-                                <div class="cont-col2">
-                                  <div class="desc">
-                                    IPO Report for year 2013 has been released.
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            <div class="col2">
-                              <div class="date">
-                                20 mins
-                              </div>
-                            </div>
-                          </a>
-                        </li>
+                            </li>
+    <?php
+}
+?>                        
                       </ul>
                     </div><div class="slimScrollBar" style="width: 7px; position: absolute; top: 145px; opacity: 0.4; display: block; border-radius: 7px; z-index: 99; right: 1px; height: 155.172px; background: rgb(187, 187, 187);"></div><div class="slimScrollRail" style="width: 7px; height: 100%; position: absolute; top: 0px; display: none; border-radius: 7px; opacity: 0.2; z-index: 90; right: 1px; background: rgb(234, 234, 234);"></div></div>
                   <div class="scroller-footer">
                     <div class="btn-arrow-link pull-right">
-                      <a href="#">See All Records</a>
+                      <a href="javascript:;" id="xtranotif_toggle">See All Notifications</a>
                       <i class="icon-arrow-right"></i>
                     </div>
                   </div>
@@ -1032,330 +650,89 @@ $me_growth = ceil($me_trade / ($me_div)) * 100;
                     <i class="fa fa-list"></i>Recent Activities
                   </div>
                   <div class="tools">                    
-                    <a href="" class="reload" data-original-title="" title="">
-                    </a>
                     <a href="javascript:;" class="fullscreen" data-original-title="" title="">
                     </a>
                   </div>                  
                 </div>
                 <div class="portlet-body">
-                  <div class="slimScrollDiv" style="position: relative; overflow: hidden; width: auto; height: 300px;"><div class="scroller" style="height: 300px; overflow: hidden; width: auto;" data-always-visible="1" data-rail-visible="0" data-initialized="1">
+                  <div class="slimScrollDiv" style="position: relative; overflow: hidden; width: auto; height: auto;"><div class="scroller" style="height: auto; overflow: hidden; width: auto;" data-always-visible="1" data-rail-visible="0" data-initialized="1">
                       <ul class="feeds">
-                        <li>
+<?php
+if (count($activity_log) == 0)
+{
+    echo '<li>
                           <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-info">
-                                  <i class="fa fa-check"></i>
-                                </div>
-                              </div>
+                            <div class="cont">                              
                               <div class="cont-col2">
                                 <div class="desc">
-                                  You have 4 pending tasks. <span class="label label-sm label-warning ">
-                                    Take action <i class="fa fa-share"></i>
+                                  No activities yet
                                   </span>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              Just now
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <a href="#">
-                            <div class="col1">
-                              <div class="cont">
-                                <div class="cont-col1">
-                                  <div class="label label-sm label-success">
-                                    <i class="fa fa-bar-chart-o"></i>
+                          </div>                          
+                        </li>';
+}
+foreach (array_slice($activity_log, 0, 9) as $activity)
+{
+    ?>
+                            <li>
+                              <div class="col1">
+                                <div class="cont">
+                                  <div class="cont-col1">
+                                    <div class="label label-sm label-info">
+                                      <i class="<?= $activity_icons[$activity["type"]] ?>"></i>
+                                    </div>
                                   </div>
-                                </div>
-                                <div class="cont-col2">
-                                  <div class="desc">
-                                    Finance Report for year 2013 has been released.
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            <div class="col2">
-                              <div class="date">
-                                20 mins
-                              </div>
-                            </div>
-                          </a>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-danger">
-                                  <i class="fa fa-user"></i>
-                                </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  You have 5 pending membership that requires a quick review.
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              24 mins
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-info">
-                                  <i class="fa fa-shopping-cart"></i>
-                                </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  New order received with <span class="label label-sm label-success">
-                                    Reference Number: DR23923 </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              30 mins
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-success">
-                                  <i class="fa fa-user"></i>
-                                </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  You have 5 pending membership that requires a quick review.
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              24 mins
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-default">
-                                  <i class="fa fa-bell-o"></i>
-                                </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  Web server hardware needs to be upgraded. <span class="label label-sm label-default ">
-                                    Overdue </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              2 hours
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <a href="#">
-                            <div class="col1">
-                              <div class="cont">
-                                <div class="cont-col1">
-                                  <div class="label label-sm label-default">
-                                    <i class="fa fa-briefcase"></i>
-                                  </div>
-                                </div>
-                                <div class="cont-col2">
-                                  <div class="desc">
-                                    IPO Report for year 2013 has been released.
+                                  <div class="cont-col2">
+                                    <div class="desc">
+    <?= $activity["text"] ?>
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                            <div class="col2">
-                              <div class="date">
-                                20 mins
-                              </div>
-                            </div>
-                          </a>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-info">
-                                  <i class="fa fa-check"></i>
+                              <div class="col2">
+                                <div class="date">
+    <?= $activity["time"] ?>
                                 </div>
                               </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  You have 4 pending tasks. <span class="label label-sm label-warning ">
-                                    Take action <i class="fa fa-share"></i>
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              Just now
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <a href="#">
-                            <div class="col1">
-                              <div class="cont">
-                                <div class="cont-col1">
-                                  <div class="label label-sm label-danger">
-                                    <i class="fa fa-bar-chart-o"></i>
+                            </li>
+    <?php
+}
+foreach (array_slice($activity_log, 9) as $xlog)
+{
+    ?>
+                            <li style="display:none" class="xlog">                          
+                              <div class="col1">
+                                <div class="cont">
+                                  <div class="cont-col1">
+                                    <div class="label label-sm label-success">
+                                      <i class="<?= $activity_icons[$xlog["type"]] ?>"></i>
+                                    </div>
                                   </div>
-                                </div>
-                                <div class="cont-col2">
-                                  <div class="desc">
-                                    Finance Report for year 2013 has been released.
+                                  <div class="cont-col2">
+                                    <div class="desc">
+    <?= $xlog["text"] ?>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                            <div class="col2">
-                              <div class="date">
-                                20 mins
-                              </div>
-                            </div>
-                          </a>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-default">
-                                  <i class="fa fa-user"></i>
+                              <div class="col2">
+                                <div class="date">
+                                        <?= $xlog["time"] ?>
                                 </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  You have 5 pending membership that requires a quick review.
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              24 mins
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-info">
-                                  <i class="fa fa-shopping-cart"></i>
-                                </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  New order received with <span class="label label-sm label-success">
-                                    Reference Number: DR23923 </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              30 mins
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-success">
-                                  <i class="fa fa-user"></i>
-                                </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  You have 5 pending membership that requires a quick review.
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              24 mins
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-warning">
-                                  <i class="fa fa-bell-o"></i>
-                                </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  Web server hardware needs to be upgraded. <span class="label label-sm label-default ">
-                                    Overdue </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              2 hours
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <a href="#">
-                            <div class="col1">
-                              <div class="cont">
-                                <div class="cont-col1">
-                                  <div class="label label-sm label-info">
-                                    <i class="fa fa-briefcase"></i>
-                                  </div>
-                                </div>
-                                <div class="cont-col2">
-                                  <div class="desc">
-                                    IPO Report for year 2013 has been released.
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            <div class="col2">
-                              <div class="date">
-                                20 mins
-                              </div>
-                            </div>
-                          </a>
-                        </li>
+                              </div>                          
+                            </li>
+    <?php
+}
+?>
+
                       </ul>
                     </div><div class="slimScrollBar" style="width: 7px; position: absolute; top: 145px; opacity: 0.4; display: block; border-radius: 7px; z-index: 99; right: 1px; height: 155.172px; background: rgb(187, 187, 187);"></div><div class="slimScrollRail" style="width: 7px; height: 100%; position: absolute; top: 0px; display: none; border-radius: 7px; opacity: 0.2; z-index: 90; right: 1px; background: rgb(234, 234, 234);"></div></div>
                   <div class="scroller-footer">
                     <div class="btn-arrow-link pull-right">
-                      <a href="#">See All Records</a>
+                      <a href="javascript:;" id="xlog-toggle">See All Activities</a>
                       <i class="icon-arrow-right"></i>
                     </div>
                   </div>
@@ -1371,331 +748,90 @@ $me_growth = ceil($me_trade / ($me_div)) * 100;
                   <div class="caption">
                     <i class="fa fa-check"></i>Tasks
                   </div>
-                  <div class="tools">                    
-                    <a href="" class="reload" data-original-title="" title="">
-                    </a>
+                  <div class="tools">
                     <a href="javascript:;" class="fullscreen" data-original-title="" title="">
                     </a>
                   </div>                  
                 </div>
                 <div class="portlet-body">
-                  <div class="slimScrollDiv" style="position: relative; overflow: hidden; width: auto; height: 300px;"><div class="scroller" style="height: 300px; overflow: hidden; width: auto;" data-always-visible="1" data-rail-visible="0" data-initialized="1">
+                  <div class="slimScrollDiv" style="position: relative; overflow: hidden; width: auto; height: auto;"><div class="scroller" style="height: auto; overflow: hidden; width: auto;" data-always-visible="1" data-rail-visible="0" data-initialized="1">
                       <ul class="feeds">
-                        <li>
+<?php
+if (count($my_tasks) == 0)
+{
+    echo '<li>
                           <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-info">
-                                  <i class="fa fa-check"></i>
-                                </div>
-                              </div>
+                            <div class="cont">                              
                               <div class="cont-col2">
                                 <div class="desc">
-                                  You have 4 pending tasks. <span class="label label-sm label-warning ">
-                                    Take action <i class="fa fa-share"></i>
+                                  No tasks pending
                                   </span>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              Just now
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <a href="#">
-                            <div class="col1">
-                              <div class="cont">
-                                <div class="cont-col1">
-                                  <div class="label label-sm label-success">
-                                    <i class="fa fa-bar-chart-o"></i>
+                          </div>                          
+                        </li>';
+}
+foreach (array_slice($my_tasks, 0, 9) as $task)
+{
+    ?>
+                            <li>
+                              <div class="col1">
+                                <div class="cont">
+                                  <div class="cont-col1">
+                                    <div class="label label-sm label-info">
+                                      <i class="fa fa-wrench"></i>
+                                    </div>
                                   </div>
-                                </div>
-                                <div class="cont-col2">
-                                  <div class="desc">
-                                    Finance Report for year 2013 has been released.
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            <div class="col2">
-                              <div class="date">
-                                20 mins
-                              </div>
-                            </div>
-                          </a>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-danger">
-                                  <i class="fa fa-user"></i>
-                                </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  You have 5 pending membership that requires a quick review.
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              24 mins
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-info">
-                                  <i class="fa fa-shopping-cart"></i>
-                                </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  New order received with <span class="label label-sm label-success">
-                                    Reference Number: DR23923 </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              30 mins
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-success">
-                                  <i class="fa fa-user"></i>
-                                </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  You have 5 pending membership that requires a quick review.
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              24 mins
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-default">
-                                  <i class="fa fa-bell-o"></i>
-                                </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  Web server hardware needs to be upgraded. <span class="label label-sm label-default ">
-                                    Overdue </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              2 hours
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <a href="#">
-                            <div class="col1">
-                              <div class="cont">
-                                <div class="cont-col1">
-                                  <div class="label label-sm label-default">
-                                    <i class="fa fa-briefcase"></i>
-                                  </div>
-                                </div>
-                                <div class="cont-col2">
-                                  <div class="desc">
-                                    IPO Report for year 2013 has been released.
+                                  <div class="cont-col2">
+                                    <div class="desc">
+    <?= $my_tasks["text"] ?>
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                            <div class="col2">
-                              <div class="date">
-                                20 mins
-                              </div>
-                            </div>
-                          </a>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-info">
-                                  <i class="fa fa-check"></i>
+                              <div class="col2">
+                                <div class="date">
+                                  pending
                                 </div>
                               </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  You have 4 pending tasks. <span class="label label-sm label-warning ">
-                                    Take action <i class="fa fa-share"></i>
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              Just now
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <a href="#">
-                            <div class="col1">
-                              <div class="cont">
-                                <div class="cont-col1">
-                                  <div class="label label-sm label-danger">
-                                    <i class="fa fa-bar-chart-o"></i>
+                            </li>
+    <?php
+}
+foreach (array_slice($my_tasks, 9) as $x_tasks)
+{
+    ?>
+                            <li style="display: none;" class="xtasks">                          
+                              <div class="col1">
+                                <div class="cont">
+                                  <div class="cont-col1">
+                                    <div class="label label-sm label-success">
+                                      <i class="fa fa-wrench"></i>
+                                    </div>
                                   </div>
-                                </div>
-                                <div class="cont-col2">
-                                  <div class="desc">
-                                    Finance Report for year 2013 has been released.
+                                  <div class="cont-col2">
+                                    <div class="desc">
+    <?= $x_tasks["text"] ?>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                            <div class="col2">
-                              <div class="date">
-                                20 mins
-                              </div>
-                            </div>
-                          </a>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-default">
-                                  <i class="fa fa-user"></i>
+                              <div class="col2">
+                                <div class="date">
+                                  pending
                                 </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  You have 5 pending membership that requires a quick review.
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              24 mins
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-info">
-                                  <i class="fa fa-shopping-cart"></i>
-                                </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  New order received with <span class="label label-sm label-success">
-                                    Reference Number: DR23923 </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              30 mins
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-success">
-                                  <i class="fa fa-user"></i>
-                                </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  You have 5 pending membership that requires a quick review.
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              24 mins
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <div class="col1">
-                            <div class="cont">
-                              <div class="cont-col1">
-                                <div class="label label-sm label-warning">
-                                  <i class="fa fa-bell-o"></i>
-                                </div>
-                              </div>
-                              <div class="cont-col2">
-                                <div class="desc">
-                                  Web server hardware needs to be upgraded. <span class="label label-sm label-default ">
-                                    Overdue </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col2">
-                            <div class="date">
-                              2 hours
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <a href="#">
-                            <div class="col1">
-                              <div class="cont">
-                                <div class="cont-col1">
-                                  <div class="label label-sm label-info">
-                                    <i class="fa fa-briefcase"></i>
-                                  </div>
-                                </div>
-                                <div class="cont-col2">
-                                  <div class="desc">
-                                    IPO Report for year 2013 has been released.
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            <div class="col2">
-                              <div class="date">
-                                20 mins
-                              </div>
-                            </div>
-                          </a>
-                        </li>
+                              </div>                          
+                            </li>
+    <?php
+}
+?>
+
                       </ul>
                     </div><div class="slimScrollBar" style="width: 7px; position: absolute; top: 145px; opacity: 0.4; display: block; border-radius: 7px; z-index: 99; right: 1px; height: 155.172px; background: rgb(187, 187, 187);"></div><div class="slimScrollRail" style="width: 7px; height: 100%; position: absolute; top: 0px; display: none; border-radius: 7px; opacity: 0.2; z-index: 90; right: 1px; background: rgb(234, 234, 234);"></div></div>
                   <div class="scroller-footer">
                     <div class="btn-arrow-link pull-right">
-                      <a href="#">See All Records</a>
+                      <a href="javascript:;" id="xtasks-toggle">See All Tasks</a>
                       <i class="icon-arrow-right"></i>
                     </div>
                   </div>
@@ -1708,7 +844,7 @@ $me_growth = ceil($me_trade / ($me_div)) * 100;
               <div class="portlet solid grey-cararra bordered">
                 <div class="portlet-title">
                   <div class="caption">
-                    <i class="fa fa-bullhorn"></i>Revenue
+                    <i class="fa fa-bullhorn"></i>Trade Chart
                   </div>                  
                 </div>
                 <div class="portlet-body">
@@ -1717,500 +853,629 @@ $me_growth = ceil($me_trade / ($me_div)) * 100;
                   </div>
                   <div id="site_activities_content" class="display-none" style="display: block;">
                     <div id="site_activities" style="height: 228px; padding: 0px; position: relative;">
-                      <canvas class="flot-base" width="123" height="250" style="direction: ltr; position: absolute; left: 0px; top: 0px; width: 112px; height: 228px;"></canvas><div class="flot-text" style="position: absolute; top: 0px; left: 0px; bottom: 0px; right: 0px; font-size: smaller; color: rgb(84, 84, 84);"><div class="flot-x-axis flot-x1-axis xAxis x1Axis" style="position: absolute; top: 0px; left: 0px; bottom: 0px; right: 0px; display: block;"><div style="position: absolute; max-width: 44px; top: 210px; font-style: normal; font-variant: small-caps; font-weight: 400; font-stretch: normal; font-size: 10px; line-height: 18px; font-family: 'Open Sans', sans-serif; color: rgb(111, 123, 138); left: 20px; text-align: center;">DEC</div><div style="position: absolute; max-width: 44px; top: 210px; font-style: normal; font-variant: small-caps; font-weight: 400; font-stretch: normal; font-size: 10px; line-height: 18px; font-family: 'Open Sans', sans-serif; color: rgb(111, 123, 138); left: 29px; text-align: center;">JAN</div><div style="position: absolute; max-width: 44px; top: 210px; font-style: normal; font-variant: small-caps; font-weight: 400; font-stretch: normal; font-size: 10px; line-height: 18px; font-family: 'Open Sans', sans-serif; color: rgb(111, 123, 138); left: 37px; text-align: center;">FEB</div><div style="position: absolute; max-width: 44px; top: 210px; font-style: normal; font-variant: small-caps; font-weight: 400; font-stretch: normal; font-size: 10px; line-height: 18px; font-family: 'Open Sans', sans-serif; color: rgb(111, 123, 138); left: 42px; text-align: center;">MAR</div><div style="position: absolute; max-width: 44px; top: 210px; font-style: normal; font-variant: small-caps; font-weight: 400; font-stretch: normal; font-size: 10px; line-height: 18px; font-family: 'Open Sans', sans-serif; color: rgb(111, 123, 138); left: 52px; text-align: center;">APR</div><div style="position: absolute; max-width: 44px; top: 210px; font-style: normal; font-variant: small-caps; font-weight: 400; font-stretch: normal; font-size: 10px; line-height: 18px; font-family: 'Open Sans', sans-serif; color: rgb(111, 123, 138); left: 59px; text-align: center;">MAY</div><div style="position: absolute; max-width: 44px; top: 210px; font-style: normal; font-variant: small-caps; font-weight: 400; font-stretch: normal; font-size: 10px; line-height: 18px; font-family: 'Open Sans', sans-serif; color: rgb(111, 123, 138); left: 69px; text-align: center;">JUN</div><div style="position: absolute; max-width: 44px; top: 210px; font-style: normal; font-variant: small-caps; font-weight: 400; font-stretch: normal; font-size: 10px; line-height: 18px; font-family: 'Open Sans', sans-serif; color: rgb(111, 123, 138); left: 78px; text-align: center;">JUL</div><div style="position: absolute; max-width: 44px; top: 210px; font-style: normal; font-variant: small-caps; font-weight: 400; font-stretch: normal; font-size: 10px; line-height: 18px; font-family: 'Open Sans', sans-serif; color: rgb(111, 123, 138); left: 83px; text-align: center;">AUG</div><div style="position: absolute; max-width: 44px; top: 210px; font-style: normal; font-variant: small-caps; font-weight: 400; font-stretch: normal; font-size: 10px; line-height: 18px; font-family: 'Open Sans', sans-serif; color: rgb(111, 123, 138); left: 93px; text-align: center;">SEP</div></div><div class="flot-y-axis flot-y1-axis yAxis y1Axis" style="position: absolute; top: 0px; left: 0px; bottom: 0px; right: 0px; display: block;"><div style="position: absolute; top: 198px; font-style: normal; font-variant: small-caps; font-weight: 400; font-stretch: normal; font-size: 10px; line-height: 14px; font-family: 'Open Sans', sans-serif; color: rgb(111, 123, 138); left: 19px; text-align: right;">0</div><div style="position: absolute; top: 149px; font-style: normal; font-variant: small-caps; font-weight: 400; font-stretch: normal; font-size: 10px; line-height: 14px; font-family: 'Open Sans', sans-serif; color: rgb(111, 123, 138); left: 7px; text-align: right;">500</div><div style="position: absolute; top: 101px; font-style: normal; font-variant: small-caps; font-weight: 400; font-stretch: normal; font-size: 10px; line-height: 14px; font-family: 'Open Sans', sans-serif; color: rgb(111, 123, 138); left: 1px; text-align: right;">1000</div><div style="position: absolute; top: 52px; font-style: normal; font-variant: small-caps; font-weight: 400; font-stretch: normal; font-size: 10px; line-height: 14px; font-family: 'Open Sans', sans-serif; color: rgb(111, 123, 138); left: 1px; text-align: right;">1500</div><div style="position: absolute; top: 3px; font-style: normal; font-variant: small-caps; font-weight: 400; font-stretch: normal; font-size: 10px; line-height: 14px; font-family: 'Open Sans', sans-serif; color: rgb(111, 123, 138); left: 1px; text-align: right;">2000</div></div></div><canvas class="flot-overlay" width="123" height="250" style="direction: ltr; position: absolute; left: 0px; top: 0px; width: 112px; height: 228px;"></canvas></div>
-                  </div>
+                      <canvas class="flot-base" width="123" height="250" 
+                              style="direction: ltr; position: absolute; left: 0px; top: 0px; width: 112px; height: 228px;"></canvas>
+                      <div class="flot-text" style="position: absolute; top: 0px; left: 0px; bottom: 0px; right: 0px; font-size: smaller; color: rgb(84, 84, 84);">
+                        <div class="flot-x-axis flot-x1-axis xAxis x1Axis" style="position: absolute; top: 0px; left: 0px; bottom: 0px; right: 0px; display: block;">
+                          
+                          <?php
+                          foreach($trade_chart["x"]["x"] as $x_label=>$x_value)
+                          {                          
+                          ?>
+                          <div style="position: absolute; max-width: 44px; top: 210px; font-style: normal; font-variant: small-caps; font-weight: 400; font-stretch: normal; font-size: 10px; line-height: 18px; font-family: 'Open Sans', sans-serif; color: rgb(111, 123, 138); left: 20px; text-align: center;"><?= $x_label ?></div>
+                          <?php
+                          }
+                          ?>                          
+                        </div></div>
+                        <div class="flot-y-axis flot-y1-axis yAxis y1Axis" style="position: absolute; top: 0px; left: 0px; bottom: 0px; right: 0px; display: block;">
+                          <?php
+                          foreach($trade_chart["y"] as $y_value)
+                          {
+                          ?>
+                          <div style="position: absolute; top: 198px; font-style: normal; font-variant: small-caps; font-weight: 400; font-stretch: normal; font-size: 10px; line-height: 14px; font-family: 'Open Sans', sans-serif; color: rgb(111, 123, 138); left: 19px; text-align: right;"><?= $y_value ?></div>
+                          <?php
+                          }
+                          ?>
+                          </div></div><canvas class="flot-overlay" width="123" height="250" style="direction: ltr; position: absolute; left: 0px; top: 0px; width: 112px; height: 228px;"></canvas>
+                    </div>
 
+                  </div>
+                </div>
+                <!-- END PORTLET-->
+              </div>  
+
+            </div>
+
+            <div class="clearfix">
+            </div>
+
+            <div class="row">
+
+              <div class="col-md-6 col-sm-6">
+                <div class="portlet box purple-wisteria">
+                  <div class="portlet-title">
+                    <div class="caption">
+                      <i class="fa fa-calendar"></i>General Stats
+                    </div>
+                    <div class="tools">                    
+                      <a href="" class="reload" data-original-title="" title="">
+                      </a>
+                      <a href="javascript:;" class="fullscreen" data-original-title="" title="">
+                      </a>
+                    </div>
+                  </div>
+                  <div class="portlet-body">
+                    <div class="row">
+                      <div class="col-md-4">
+                        <div class="easy-pie-chart">
+                          <div class="number transactions" data-percent="55">
+                            <span>
+                              +55 </span>
+                            %
+                            <canvas height="82" width="82" style="height: 75px; width: 75px;"></canvas></div>
+                          <a class="title" href="#">
+                            Transactions <i class="icon-arrow-right"></i>
+                          </a>
+                        </div>
+                      </div>
+                      <div class="margin-bottom-10 visible-sm">
+                      </div>
+                      <div class="col-md-4">
+                        <div class="easy-pie-chart">
+                          <div class="number visits" data-percent="85">
+                            <span>
+                              +85 </span>
+                            %
+                            <canvas height="82" width="82" style="height: 75px; width: 75px;"></canvas></div>
+                          <a class="title" href="#">
+                            New Visits <i class="icon-arrow-right"></i>
+                          </a>
+                        </div>
+                      </div>
+                      <div class="margin-bottom-10 visible-sm">
+                      </div>
+                      <div class="col-md-4">
+                        <div class="easy-pie-chart">
+                          <div class="number bounce" data-percent="46">
+                            <span>
+                              -46 </span>
+                            %
+                            <canvas height="82" width="82" style="height: 75px; width: 75px;"></canvas></div>
+                          <a class="title" href="#">
+                            Bounce <i class="icon-arrow-right"></i>
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <!-- END PORTLET-->
-            </div>  
 
-          </div>
+            </div>
 
-          <div class="clearfix">
-          </div>
 
-          <div class="row">
-
-            <div class="col-md-6 col-sm-6">
-              <div class="portlet box purple-wisteria">
-                <div class="portlet-title">
-                  <div class="caption">
-                    <i class="fa fa-calendar"></i>General Stats
-                  </div>
-                  <div class="tools">                    
-                    <a href="" class="reload" data-original-title="" title="">
-                    </a>
-                    <a href="javascript:;" class="fullscreen" data-original-title="" title="">
-                    </a>
-                  </div>
-                </div>
-                <div class="portlet-body">
-                  <div class="row">
-                    <div class="col-md-4">
-                      <div class="easy-pie-chart">
-                        <div class="number transactions" data-percent="55">
-                          <span>
-                            +55 </span>
-                          %
-                          <canvas height="82" width="82" style="height: 75px; width: 75px;"></canvas></div>
-                        <a class="title" href="#">
-                          Transactions <i class="icon-arrow-right"></i>
-                        </a>
-                      </div>
-                    </div>
-                    <div class="margin-bottom-10 visible-sm">
-                    </div>
-                    <div class="col-md-4">
-                      <div class="easy-pie-chart">
-                        <div class="number visits" data-percent="85">
-                          <span>
-                            +85 </span>
-                          %
-                          <canvas height="82" width="82" style="height: 75px; width: 75px;"></canvas></div>
-                        <a class="title" href="#">
-                          New Visits <i class="icon-arrow-right"></i>
-                        </a>
-                      </div>
-                    </div>
-                    <div class="margin-bottom-10 visible-sm">
-                    </div>
-                    <div class="col-md-4">
-                      <div class="easy-pie-chart">
-                        <div class="number bounce" data-percent="46">
-                          <span>
-                            -46 </span>
-                          %
-                          <canvas height="82" width="82" style="height: 75px; width: 75px;"></canvas></div>
-                        <a class="title" href="#">
-                          Bounce <i class="icon-arrow-right"></i>
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div class="clearfix">
             </div>
 
           </div>
-
-
-          <div class="clearfix">
-          </div>
-
         </div>
-      </div>
-      <!-- END CONTENT -->
-      <!-- BEGIN QUICK SIDEBAR -->
-      <a href="javascript:;" class="page-quick-sidebar-toggler"><i class="icon-close"></i></a>
-      <div class="page-quick-sidebar-wrapper">
-        <div class="page-quick-sidebar">
-          <div class="nav-justified">
-            <ul class="nav nav-tabs nav-justified">
-              <li class="active">
-                <a href="#quick_sidebar_tab_1" data-toggle="tab" class="">
-                  Chats
-                </a>
-              </li>
-            </ul>
-            <div class="tab-content">
-              <div class="tab-pane active page-quick-sidebar-chat" id="quick_sidebar_tab_1">
-                <div class="page-quick-sidebar-list" style="position: relative; overflow: hidden; width: auto; height: 538px;">
-                  <div class="page-quick-sidebar-chat-users" data-rail-color="#ddd" data-wrapper-class="page-quick-sidebar-list" data-height="538" data-initialized="1" style="overflow: hidden; width: auto; height: 538px;">
+        <!-- END CONTENT -->
+        <!-- BEGIN QUICK SIDEBAR -->
+        <a href="javascript:;" class="page-quick-sidebar-toggler"><i class="icon-close"></i></a>
+        <div class="page-quick-sidebar-wrapper">
+          <div class="page-quick-sidebar">
+            <div class="nav-justified">
+              <ul class="nav nav-tabs nav-justified">
+                <li class="active">
+                  <a href="#quick_sidebar_tab_1" data-toggle="tab" class="">
+                    Chats
+                  </a>
+                </li>
+              </ul>
+              <div class="tab-content">
+                <div class="tab-pane active page-quick-sidebar-chat" id="quick_sidebar_tab_1">
+                  <div class="page-quick-sidebar-list" style="position: relative; overflow: hidden; width: auto; height: 538px;">
+                    <div class="page-quick-sidebar-chat-users" data-rail-color="#ddd" data-wrapper-class="page-quick-sidebar-list" data-height="538" data-initialized="1" style="overflow: hidden; width: auto; height: 538px;">
 
-                    <ul class="media-list list-items">
-                      <li class="media chat-list" vec="0">
-                        <div class="media-body">
-                          <span class="media-heading"><i class="icon-plus"></i> NEW</span>                          
-                        </div>
-                      </li>
-                    </ul>
-
-                    <h3 class="list-heading">Chats</h3>
-                    <ul class="media-list list-items" id="chats-list">
-                      <li class="media chat-list" vec="1">
-                        <div class="media-status">
-                          <span class="badge badge-success">8</span>
-                        </div>
-                        <img class="media-object" src="metronic/admin/layout/img/avatar3.jpg" alt="...">
-                        <div class="media-body">
-                          <h4 class="media-heading">Bob Nilson</h4>
-                          <div class="media-heading-sub">
-                            Project Manager
+                      <ul class="media-list list-items">
+                        <li class="media chat-list" vec="0">
+                          <div class="media-body">
+                            <span class="media-heading"><i class="icon-plus"></i> NEW</span>                          
+                          </div>
+                        </li>
+                      </ul>
+                      
+                      <h3 class="list-heading">Chats</h3>                      
+                      <ul class="media-list list-items" id="chats-list">                        
+                        <?php
+                        if($chats["total_unread"] == 0)
+                            echo ' <li>No active chats yet</li>';
+                      
+                        foreach($chats["threads"] as $pal=>$conv)                        
+                        {
+                        ?>                        
+                        <li class="media chat-list" vec="<?= $pal ?>">
+                          <?php
+                            if($chats["pal_unread"][$pal] > 0)
+                                echo '<div class="media-status"><span class="badge badge-danger">'.$chats["pal_unread"][$pal].'</span></div>';
+                          ?>                          
+                          <img class="media-object" src="<?= $chats["pal_data"][$pal]["avatar"] ?>" alt="...">
+                          <div class="media-body">
+                            <h4 class="media-heading"><?= $chats["pal_data"][$pal]["names"] ?></h4>                            
+                          </div>
+                        </li>
+                        <?php
+                        }
+                        ?>                     
+                        
+                      </ul>
+                    </div>
+                    <div class="slimScrollBar" style="width: 7px; position: absolute; top: 0px; opacity: 0.4; display: block; border-radius: 7px; z-index: 99; right: 1px; height: 391.67px; background: rgb(187, 187, 187);"></div><div class="slimScrollRail" style="width: 7px; height: 100%; position: absolute; top: 0px; display: none; border-radius: 7px; opacity: 0.2; z-index: 90; right: 1px; background: rgb(221, 221, 221);"></div></div>
+                    
+                    <?php
+                    foreach($chats["threads"] as $pal=>$conv)
+                    {
+                    ?>                    
+                    <div class="page-quick-sidebar-item" vec="<?= $pal ?>">
+                    <div class="page-quick-sidebar-chat-user">
+                      <div class="page-quick-sidebar-nav">
+                        <a href="javascript:;" class="page-quick-sidebar-back-to-list"><i class="icon-arrow-left"></i>Back</a>
+                      </div>
+                      <div class="page-quick-sidebar-chat-user-messages" vec="<?= $pal ?>">
+                        <?php
+                        foreach($conv as $c)
+                        {
+                        ?>
+                        <div class="post <?= $c["is_me"] == 1 ? "out":"in" ?>">
+                          <img class="avatar" alt="" src="<?= $c["usr"]["avatar"]  ?>"/>
+                          <div class="message">
+                            <span class="arrow"></span>
+                            <a href="javascript:;" class="name"><?= $c["usr"]["names"]  ?></a>
+                            <span class="datetime"><?= $c["usr"]["time"] ?></span>
+                            <span class="body">
+                              <?= $c["msg"] ?>
+                            </span>
                           </div>
                         </div>
-                      </li>
-                      <li class="media chat-list" vec="1">
-                        <img class="media-object" src="metronic/admin/layout/img/avatar1.jpg" alt="...">
-                        <div class="media-body">
-                          <h4 class="media-heading">Nick Larson</h4>
-                          <div class="media-heading-sub">
-                            Art Director
+                        <?php
+                        }
+                        ?>                        
+                      </div>
+                      <div class="page-quick-sidebar-chat-user-form">
+                        <div class="input-group">
+                          <input type="text" class="form-control" vec="<?= $pal ?>" placeholder="Type here ...">
+                          <div class="input-group-btn">
+                            <button type="button" class="btn blue" vec="<?= $pal ?>"><i class="icon-paper-clip"></i></button>
                           </div>
                         </div>
-                      </li>
-                      <li class="media chat-list" vec="1">
-                        <div class="media-status">
-                          <span class="badge badge-danger">3</span>
-                        </div>
-                        <img class="media-object" src="metronic/admin/layout/img/avatar4.jpg" alt="...">
-                        <div class="media-body">
-                          <h4 class="media-heading">Deon Hubert</h4>
-                          <div class="media-heading-sub">
-                            CTO
-                          </div>
-                        </div>
-                      </li>
-                      <li class="media chat-list" vec="3">
-                        <img class="media-object" src="metronic/admin/layout/img/avatar2.jpg" alt="...">
-                        <div class="media-body">
-                          <h4 class="media-heading">Ella Wong</h4>
-                          <div class="media-heading-sub">
-                            CEO
-                          </div>
-                        </div>
-                      </li>
-                    </ul>
+                      </div>
+                    </div>
                   </div>
-                  <div class="slimScrollBar" style="width: 7px; position: absolute; top: 0px; opacity: 0.4; display: block; border-radius: 7px; z-index: 99; right: 1px; height: 391.67px; background: rgb(187, 187, 187);"></div><div class="slimScrollRail" style="width: 7px; height: 100%; position: absolute; top: 0px; display: none; border-radius: 7px; opacity: 0.2; z-index: 90; right: 1px; background: rgb(221, 221, 221);"></div></div>
-                <div class="page-quick-sidebar-item" vec="1">
+                    <?php
+                    }
+                    ?>
+                  
+                  <div class="page-quick-sidebar-item" vec="0">
                   <div class="page-quick-sidebar-chat-user">
                     <div class="page-quick-sidebar-nav">
-                      <a href="javascript:;" class="page-quick-sidebar-back-to-list"><i class="icon-arrow-left"></i>Back</a>
-                    </div>
-                    <div class="page-quick-sidebar-chat-user-messages">
-                      <div class="post out">
-                        <img class="avatar" alt="" src="metronic/admin/layout/img/avatar3.jpg"/>
-                        <div class="message">
-                          <span class="arrow"></span>
-                          <a href="#" class="name">Bob Nilson</a>
-                          <span class="datetime">20:15</span>
-                          <span class="body">
-                            When could you send me the report ? </span>
-                        </div>
-                      </div>
-                      <div class="post in">
-                        <img class="avatar" alt="" src="metronic/admin/layout/img/avatar2.jpg"/>
-                        <div class="message">
-                          <span class="arrow"></span>
-                          <a href="#" class="name">Ella Wong</a>
-                          <span class="datetime">20:15</span>
-                          <span class="body">
-                            Its almost done. I will be sending it shortly </span>
-                        </div>
-                      </div>
-                      <div class="post out">
-                        <img class="avatar" alt="" src="metronic/admin/layout/img/avatar3.jpg"/>
-                        <div class="message">
-                          <span class="arrow"></span>
-                          <a href="#" class="name">Bob Nilson</a>
-                          <span class="datetime">20:15</span>
-                          <span class="body">
-                            Alright. Thanks! :) </span>
-                        </div>
-                      </div>
-                      <div class="post in">
-                        <img class="avatar" alt="" src="metronic/admin/layout/img/avatar2.jpg"/>
-                        <div class="message">
-                          <span class="arrow"></span>
-                          <a href="#" class="name">Ella Wong</a>
-                          <span class="datetime">20:16</span>
-                          <span class="body">
-                            You are most welcome. Sorry for the delay. </span>
-                        </div>
-                      </div>
-                      <div class="post out">
-                        <img class="avatar" alt="" src="metronic/admin/layout/img/avatar3.jpg"/>
-                        <div class="message">
-                          <span class="arrow"></span>
-                          <a href="#" class="name">Bob Nilson</a>
-                          <span class="datetime">20:17</span>
-                          <span class="body">
-                            No probs. Just take your time :) </span>
-                        </div>
-                      </div>
-                      <div class="post in">
-                        <img class="avatar" alt="" src="metronic/admin/layout/img/avatar2.jpg"/>
-                        <div class="message">
-                          <span class="arrow"></span>
-                          <a href="#" class="name">Ella Wong</a>
-                          <span class="datetime">20:40</span>
-                          <span class="body">
-                            Alright. I just emailed it to you. </span>
-                        </div>
-                      </div>
-                      <div class="post out">
-                        <img class="avatar" alt="" src="metronic/admin/layout/img/avatar3.jpg"/>
-                        <div class="message">
-                          <span class="arrow"></span>
-                          <a href="#" class="name">Bob Nilson</a>
-                          <span class="datetime">20:17</span>
-                          <span class="body">
-                            Great! Thanks. Will check it right away. </span>
-                        </div>
-                      </div>
-                      <div class="post in">
-                        <img class="avatar" alt="" src="metronic/admin/layout/img/avatar2.jpg"/>
-                        <div class="message">
-                          <span class="arrow"></span>
-                          <a href="#" class="name">Ella Wong</a>
-                          <span class="datetime">20:40</span>
-                          <span class="body">
-                            Please let me know if you have any comment. </span>
-                        </div>
-                      </div>
-                      <div class="post out">
-                        <img class="avatar" alt="" src="metronic/admin/layout/img/avatar3.jpg"/>
-                        <div class="message">
-                          <span class="arrow"></span>
-                          <a href="#" class="name">Bob Nilson</a>
-                          <span class="datetime">20:17</span>
-                          <span class="body">
-                            Sure. I will check and buzz you if anything needs to be corrected. </span>
-                        </div>
-                      </div>
+                      <a href="javascript:;" class="page-quick-sidebar-back-to-list" id="new_chat_back"><i class="icon-arrow-left"></i>Back</a>
                     </div>
                     <div class="page-quick-sidebar-chat-user-form">
-                      <div class="input-group">
-                        <input type="text" class="form-control" placeholder="Type a message here...">
-                        <div class="input-group-btn">
-                          <button type="button" class="btn blue"><i class="icon-paper-clip"></i></button>
-                        </div>
-                      </div>
+                      <div class="input-group col-md-11">
+                        <select class="form-control" vec="0" id="invite_chat" style="width: 100%; z-index: 1000000000">                          
+                        </select>                        
+                      </div><br>                     
+                      <button type="button" vec="0" class="btn btn-sm blue" id="conf_new_chat"><i class="fa fa-fw fa-check"></i></button>
                     </div>
                   </div>
                 </div>
-              </div>
+                  
+                </div>                
 
-              <div class="page-quick-sidebar-item" vec="0" style="display:none;">
-                <div class="page-quick-sidebar-chat-user">
-                  <div class="page-quick-sidebar-nav">
-                    <a href="javascript:;" class="page-quick-sidebar-back-to-list" id="new_chat_back"><i class="icon-arrow-left"></i>Back</a>
-                  </div>
-                  <div class="page-quick-sidebar-chat-user-form">
-                    <div class="input-group col-md-11">
-                      <select class="form-control" id="invite_chat" style="width: 100%; z-index: 1000000000">                          
-                      </select>                        
-                    </div><br>                     
-                    <button type="button" vec-out="0" class="btn btn-sm blue" id="conf_new_chat"><i class="fa fa-fw fa-check"></i></button>
-                  </div>
-                </div>
               </div>
 
             </div>
-
           </div>
         </div>
       </div>
+      <!-- END QUICK SIDEBAR -->
     </div>
-    <!-- END QUICK SIDEBAR -->
-  </div>
-  <!-- END CONTAINER -->
-  <!-- BEGIN FOOTER -->
-  <div class="page-footer">
-    <div class="page-footer-inner">
-      2016 &copy; KaziOnline
+    <!-- END CONTAINER -->
+    <!-- BEGIN FOOTER -->
+    <div class="page-footer">
+      <div class="page-footer-inner">
+        2016 &copy; KaziOnline
+      </div>
+      <div class="scroll-to-top" style="display: none;">
+        <i class="icon-arrow-up"></i>
+      </div>
     </div>
-    <div class="scroll-to-top" style="display: none;">
-      <i class="icon-arrow-up"></i>
-    </div>
-  </div>
-  <!-- END FOOTER -->
-  <!-- BEGIN JAVASCRIPTS(Load javascripts at bottom, this will reduce page load time) -->
-  <!-- BEGIN CORE PLUGINS -->
-  <!--[if lt IE 9]>
-  <script src="metronic/global/plugins/respond.min.js"></script>
-  <script src="metronic/global/plugins/excanvas.min.js"></script> 
-  <![endif]-->
-  <script src="metronic/global/plugins/jquery.min.js" type="text/javascript"></script>
-  <script src="metronic/global/plugins/jquery-migrate.min.js" type="text/javascript"></script>
-  <!-- IMPORTANT! Load jquery-ui-1.10.3.custom.min.js before bootstrap.min.js to fix bootstrap tooltip conflict with jquery ui tooltip -->
-  <script src="metronic/global/plugins/jquery-ui/jquery-ui-1.10.3.custom.min.js" type="text/javascript"></script>
-  <script src="metronic/global/plugins/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
-  <script src="metronic/global/plugins/bootstrap-hover-dropdown/bootstrap-hover-dropdown.min.js" type="text/javascript"></script>
-  <script src="metronic/global/plugins/jquery-slimscroll/jquery.slimscroll.min.js" type="text/javascript"></script>
-  <script src="metronic/global/plugins/jquery.blockui.min.js" type="text/javascript"></script>
-  <script src="metronic/global/plugins/jquery.cokie.min.js" type="text/javascript"></script>
-  <script src="metronic/global/plugins/uniform/jquery.uniform.min.js" type="text/javascript"></script>
-  <script src="metronic/global/plugins/bootstrap-switch/js/bootstrap-switch.min.js" type="text/javascript"></script>
-  <!-- END CORE PLUGINS -->
-  <!-- BEGIN PAGE LEVEL PLUGINS -->
-  <script src="metronic/global/plugins/jqvmap/jqvmap/data/jquery.vmap.sampledata.js" type="text/javascript"></script>
-  <script src="metronic/global/plugins/flot/jquery.flot.min.js" type="text/javascript"></script>
-  <script src="metronic/global/plugins/flot/jquery.flot.resize.min.js" type="text/javascript"></script>
-  <script src="metronic/global/plugins/flot/jquery.flot.categories.min.js" type="text/javascript"></script>
-  <script src="metronic/global/plugins/jquery.pulsate.min.js" type="text/javascript"></script>
-  <script src="metronic/global/plugins/bootstrap-daterangepicker/moment.min.js" type="text/javascript"></script>
-  <script src="metronic/global/plugins/bootstrap-daterangepicker/daterangepicker.js" type="text/javascript"></script>
-  <!-- IMPORTANT! fullcalendar depends on jquery-ui-1.10.3.custom.min.js for drag & drop support -->
-  <script src="metronic/global/plugins/fullcalendar/fullcalendar.min.js" type="text/javascript"></script>
-  <script src="metronic/global/plugins/jquery-easypiechart/jquery.easypiechart.min.js" type="text/javascript"></script>
-  <script src="metronic/global/plugins/jquery.sparkline.min.js" type="text/javascript"></script>
-  <!-- END PAGE LEVEL PLUGINS -->
-  <!-- BEGIN PAGE LEVEL SCRIPTS -->
-  <script src="metronic/global/scripts/metronic.js" type="text/javascript"></script>
-  <script src="metronic/admin/layout/scripts/layout.js" type="text/javascript"></script>
-  <script src="metronic/admin/layout/scripts/quick-sidebar.js" type="text/javascript"></script>
-  <script src="metronic/admin/layout/scripts/demo.js" type="text/javascript"></script>
-  <script src="metronic/admin/pages/scripts/index.js" type="text/javascript"></script>    
-  <script src="metronic/admin/pages/scripts/tasks.js" type="text/javascript"></script>
-  <script src="jquery/select2.min.js" type="text/javascript"></script>
-  <!-- END PAGE LEVEL SCRIPTS -->
-  <script>
-        $(document).ready(function ()
-        {
-            Metronic.init(); // init metronic core componets
-            Layout.init(); // init layout
-            QuickSidebar.init(); // init quick sidebar              
-            Index.init();
-            Index.initCharts(); // init index page's custom scripts
-            Index.initChat();
-            Index.initMiniCharts();
-            Tasks.initDashboardWidget();
+    <!-- END FOOTER -->
+    <!-- BEGIN JAVASCRIPTS(Load javascripts at bottom, this will reduce page load time) -->
+    <!-- BEGIN CORE PLUGINS -->
+    <!--[if lt IE 9]>
+    <script src="metronic/global/plugins/respond.min.js"></script>
+    <script src="metronic/global/plugins/excanvas.min.js"></script> 
+    <![endif]-->
+    <script src="metronic/global/plugins/jquery.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/jquery-migrate.min.js" type="text/javascript"></script>
+    <!-- IMPORTANT! Load jquery-ui-1.10.3.custom.min.js before bootstrap.min.js to fix bootstrap tooltip conflict with jquery ui tooltip -->
+    <script src="metronic/global/plugins/jquery-ui/jquery-ui-1.10.3.custom.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/bootstrap-hover-dropdown/bootstrap-hover-dropdown.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/jquery-slimscroll/jquery.slimscroll.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/jquery.blockui.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/jquery.cokie.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/uniform/jquery.uniform.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/bootstrap-switch/js/bootstrap-switch.min.js" type="text/javascript"></script>
+    <!-- END CORE PLUGINS -->
+    <!-- BEGIN PAGE LEVEL PLUGINS -->
+    <script src="metronic/global/plugins/jqvmap/jqvmap/data/jquery.vmap.sampledata.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/flot/jquery.flot.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/flot/jquery.flot.resize.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/flot/jquery.flot.categories.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/jquery.pulsate.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/bootstrap-daterangepicker/moment.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/bootstrap-daterangepicker/daterangepicker.js" type="text/javascript"></script>
+    <!-- IMPORTANT! fullcalendar depends on jquery-ui-1.10.3.custom.min.js for drag & drop support -->
+    <script src="metronic/global/plugins/fullcalendar/fullcalendar.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/jquery-easypiechart/jquery.easypiechart.min.js" type="text/javascript"></script>
+    <script src="metronic/global/plugins/jquery.sparkline.min.js" type="text/javascript"></script>
+    <!-- END PAGE LEVEL PLUGINS -->
+    <!-- BEGIN PAGE LEVEL SCRIPTS -->
+    <script src="metronic/global/scripts/metronic.js" type="text/javascript"></script>
+    <script src="metronic/admin/layout/scripts/layout.js" type="text/javascript"></script>
+    <script src="metronic/admin/layout/scripts/quick-sidebar.js" type="text/javascript"></script>
+    <script src="metronic/admin/layout/scripts/demo.js" type="text/javascript"></script>
+    <script src="metronic/admin/pages/scripts/index.js" type="text/javascript"></script>    
+    <script src="metronic/admin/pages/scripts/tasks.js" type="text/javascript"></script>
+    <script src="jquery/select2.min.js" type="text/javascript"></script>
+    <!-- END PAGE LEVEL SCRIPTS -->
+    <script>
 
-            new_chat = {}
-            sidebar_fix = 0
-            sidebar_on = 0
+          var wrapper = $('.page-quick-sidebar-wrapper');
+          var wrapperChat = wrapper.find('.page-quick-sidebar-chat');
 
-            $("body").delegate(".chat-list", "click", function ()
-            {
-                var vec = $(this).attr("vec")
+          $(document).ready(function ()
+          {
+              Metronic.init(); // init metronic core componets
+              Layout.init(); // init layout
+              QuickSidebar.init(); // init quick sidebar              
+              Index.init();
+              Index.initCharts(); // init index page's custom scripts
+              Index.initChat();
+              Index.initMiniCharts();
+              Tasks.initDashboardWidget();
 
-                $(".page-quick-sidebar-item").hide()
-                $(".page-quick-sidebar-item[vec='" + vec + "']").css("display", "block")
-            })
+              new_chat = {}
+              sidebar_fix = 0
+              sidebar_on = 0
 
-            $("#invite_chat").select2({
-                placeholder: "Search Name",
-                allowClear: true,
-                maximumSelectionLength: 1,
-                ajax: {
-                    url: "controller/search_users_chat.php",
-                    dataType: 'json',
-                    data: function (params)
-                    {
-                        return {
-                            q: params.term
-                        };
-                    },
-                    processResults: function (data, params)
-                    {
-                        return {
-                            results: data
-                        };
-                    },
-                    cache: true
-                },
-                escapeMarkup: function (markup)
-                {
-                    return markup
-                },
-                minimumInputLength: 3,
-                templateResult: formatHint,
-                templateSelection: formatHintSelection
-            })
+              $("body").delegate(".chat-list", "click", function ()
+              {
+                  var vec = $(this).attr("vec")
+                  
+                  $(".page-quick-sidebar-item").hide()
+                  $(".page-quick-sidebar-item[vec='" + vec + "']").css("display", "block")
+              })
 
-            $("#conf_new_chat").on("click", function ()
-            {
-                var chat_entry = '<li class="media chat-list" vec="' + new_chat.id + '">' +
-                        '<img class="media-object" src="' + new_chat.avatar + '" alt="...">' +
-                        '<div class="media-body">' +
-                        '<h4 class="media-heading">' + new_chat.names + '</h4>' +
-                        '<div class="media-heading-sub"><span style="opacity:0">0</span></div>' +
-                        '</div></li>'
+              $("#xtranotif_toggle").on("click", function ()
+              {
+                  $(".xtra-notif").toggle()
+              })
 
-                $("#chats-list").append(chat_entry)
+              $("#xlog-toggle").on("click", function ()
+              {
+                  $(".xlog").toggle()
+              })
 
-                var chat = '<div class="page-quick-sidebar-item" vec="'+new_chat.id+'">'+
-                  '<div class="page-quick-sidebar-chat-user">'+
-                    '<div class="page-quick-sidebar-nav">'+
-                      '<a href="javascript:;" class="page-quick-sidebar-back-to-list"><i class="icon-arrow-left"></i>Back</a>'+
-                    '</div>'+
-                    '<div class="page-quick-sidebar-chat-user-messages">'+
-                    '<div class="page-quick-sidebar-chat-user-form">'+
-                      '<div class="input-group">'+
-                        '<input type="text" class="form-control send-chat-msg" vec="'+new_chat.id+'" placeholder="Type a message here...">'+
-                        '<div class="input-group-btn">'+
-                          '<button type="button" class="btn blue send-chat" vec-out="'+new_chat.id+'"><i class="icon-paper-clip"></i></button>'+
-                        '</div>'+
-                      '</div>'+
-                    '</div>'+
-                  '</div>'+
-                '</div>'
+              $("#xtasks-toggle").on("click", function ()
+              {
+                  $(".xtasks").toggle()
+              })
 
+              $("#invite_chat").select2({
+                  placeholder: "Search Name",
+                  allowClear: true,
+                  maximumSelectionLength: 1,
+                  ajax: {
+                      url: "controller/search_users_chat.php",
+                      dataType: 'json',
+                      data: function (params)
+                      {
+                          return {
+                              q: params.term
+                          };
+                      },
+                      processResults: function (data, params)
+                      {
+                          return {
+                              results: data
+                          };
+                      },
+                      cache: true
+                  },
+                  escapeMarkup: function (markup)
+                  {
+                      return markup
+                  },
+                  minimumInputLength: 3,
+                  templateResult: formatHint,
+                  templateSelection: formatHintSelection
+              })
 
-                $("#quick_sidebar_tab_1").append(chat)
-                $("#new_chat_back").trigger("click")
+              $("#conf_new_chat").on("click", function ()
+              {
+                  var chat_entry = '<li class="media chat-list" vec="' + new_chat.id + '">' +
+                          '<img class="media-object" src="' + new_chat.avatar + '" alt="...">' +
+                          '<div class="media-body">' +
+                          '<h4 class="media-heading">' + new_chat.names + '</h4>' +
+                          '<div class="media-heading-sub"><span style="opacity:0">0</span></div>' +
+                          '</div></li>'
 
-                sidebar_fix = 1
+                  $("#chats-list").append(chat_entry)
 
-                QuickSidebar.init(); // init quick sidebar
-            })
-
-            $(".dropdown-quick-sidebar-toggler a").on("click", function ()
-            {
-                sidebar_on = sidebar_on == 0 ? 1 : 0
-            })
-
-            $("body").delegate(".send-chat", "click", function ()
-            {
-                var vec = $(this).attr("vec-out")                
-                var msg = $(".send-chat-msg[vec="+vec+"]").val()
-                
-                var msg_add = '<div class="post out">'+
-                        '<img class="avatar" alt="" src="metronic/admin/layout/img/avatar3.jpg">'+
-                        '<div class="message">'+
-                          '<span class="arrow"></span>'+
-                          '<a href="#" class="name">Bob Nilson</a>'+
-                          '<span class="datetime">20:15</span>'+
-                          '<span class="body">'+
-                            msg +' </span>'+
-                        '</div>'+
-                      '</div>'
-
-                $(".page-quick-sidebar-chat-user-messages[vec=" + vec + "]").append(msg_add)
-
-            })
-
-            setInterval(function ()
-            {
-                if (sidebar_on == 0 && $("body").hasClass("page-quick-sidebar-open") && sidebar_fix > 0)
-                    {
-                        //alert("yebo")
-                        $("body").removeClass("page-quick-sidebar-open")
-                    }
-                else if (sidebar_on == 1 && !$("body").hasClass("page-quick-sidebar-open") && sidebar_fix > 0)
-                    {
-                        $("body").addClass("page-quick-sidebar-open")
-                    }
-            }, 50)
-
-        });
-
-        function formatHint(hint)
-        {
-            if (hint.loading)
-                return hint.names
-
-            new_chat.names = hint.names
-            new_chat.id = hint.id
-            new_chat.avatar = hint.avatar
-
-            var markup = '<div class="clearfix"><div class="col-lg-2"><img src="' + hint.avatar + '" style="width: 40px; height:auto;"></div><div class="col-lg-9">&nbsp;&nbsp;&nbsp;' + hint.names + '</div></div>'
-
-            return markup
-        }
-
-        function formatHintSelection(hint)
-        {
-            return hint.names || hint.text
-        }
+                  var chat = '<div class="page-quick-sidebar-item" vec="' + new_chat.id + '">' +
+                          '<div class="page-quick-sidebar-chat-user">' +
+                          '<div class="page-quick-sidebar-nav">' +
+                          '<a href="javascript:;" class="page-quick-sidebar-back-to-list"><i class="icon-arrow-left"></i>Back</a>' +
+                          '</div>' +
+                          '<div class="page-quick-sidebar-chat-user-messages"  vec="' + new_chat.id + '">' +
+                          '<div class="page-quick-sidebar-chat-user-form">' +
+                          '<div class="input-group">' +
+                          '<input type="text" class="form-control send-chat-msg" vec="' + new_chat.id + '" placeholder="Type a message here...">' +
+                          '<div class="input-group-btn">' +
+                          '<button type="button" class="btn blue send-chat" vec="' + new_chat.id + '"><i class="icon-paper-clip"></i></button>' +
+                          '</div>' +
+                          '</div>' +
+                          '</div>' +
+                          '</div>' +
+                          '</div>'
 
 
-  </script>
+                  $("#quick_sidebar_tab_1").append(chat)
+                  $("#new_chat_back").trigger("click")
 
-  <!-- END JAVASCRIPTS -->
+                  sidebar_fix = 1
 
-  <!-- END BODY -->
-</body>
+                  QuickSidebar.init(); // init quick sidebar
+              })
+
+              $(".dropdown-quick-sidebar-toggler a").on("click", function ()
+              {
+                  sidebar_on = sidebar_on == 0 ? 1 : 0
+              })
+
+              wrapperChat.find('.page-quick-sidebar-chat-user-form .btn').click(handleChatMessagePost);
+              wrapperChat.find('.page-quick-sidebar-chat-user-form .form-control').keypress(function (e)
+              {
+                  if (e.which == 13)
+                      {
+                          var time = new Date();
+                          var source = $(e.target)
+                          var msg = source.val()
+                          var my_pic = $("#user-prof-pic").attr("src")
+                          handleChatMessagePost(e, 'out', (time.getHours() + ':' + time.getMinutes()), "Me", my_pic, msg);
+                          return false;
+                      }
+              });
+
+              setInterval(function ()
+              {
+                  if (sidebar_on == 0 && $("body").hasClass("page-quick-sidebar-open") && sidebar_fix > 0)
+                      {
+                          $("body").removeClass("page-quick-sidebar-open")
+                      }
+                  else if (sidebar_on == 1 && !$("body").hasClass("page-quick-sidebar-open") && sidebar_fix > 0)
+                      {
+                          $("body").addClass("page-quick-sidebar-open")
+                      }
+              }, 50)
+              
+              
+              $("#nav_see_all_chats").on("click", function()
+              {
+                  $("#chats-side-swipe").trigger("click")
+              })
+
+              /*
+               setInterval(function ()
+               {
+               $.getJSON("controller/refresh_chats.php", {}, function (data)
+               {
+               //set up new chats
+               for (var i in data.new_threads)
+               {
+               var chat_entry = '<li class="media chat-list" vec="' + i + '">'
+             
+               if(data.pal_unread[i] > 0)
+               {
+               chat_entry += '<div class="media-status"><span class="badge badge-danger">'+data.pal_unread[i]+'</span></div>'
+               }
+             
+               chat_entry += '<img class="media-object" src="' + data.pal_data[i].avatar + '" alt="...">' +
+               '<div class="media-body">' +
+               '<h4 class="media-heading">' + data.pal_data[i].names + '</h4>' +
+               '<div class="media-heading-sub"><span style="opacity:0">0</span></div>' +
+               '</div></li>'
+             
+               $("#chats-list").append(chat_entry)
+             
+               for (var j in data.new_threads[i])
+               {
+               var chat = '<div class="page-quick-sidebar-item" vec="' + i + '">' +
+               '<div class="page-quick-sidebar-chat-user">' +
+               '<div class="page-quick-sidebar-nav">' +
+               '<a href="javascript:;" class="page-quick-sidebar-back-to-list"><i class="icon-arrow-left"></i>Back</a>' +
+               '</div>' +
+               '<div class="page-quick-sidebar-chat-user-messages"  vec="' + i + '">' +
+               '<div class="page-quick-sidebar-chat-user-form">' +
+               '<div class="input-group">' +
+               '<input type="text" class="form-control send-chat-msg" vec="' + i + '" placeholder="Type a message here...">' +
+               '<div class="input-group-btn">' +
+               '<button type="button" class="btn blue send-chat" vec="' + i + '"><i class="icon-paper-clip"></i></button>' +
+               '</div>' +
+               '</div>' +
+               '</div>' +
+               '</div>' +
+               '</div>'
+             
+             
+               $("#quick_sidebar_tab_1").append(chat)
+               $("#new_chat_back").trigger("click")
+             
+               sidebar_fix = 1
+             
+               QuickSidebar.init(); // init quick sidebar
+             
+               var chatContainer = wrapperChat.find(".page-quick-sidebar-chat-user-messages[vec='" + i + "']");
+             
+               var tpl = '';
+               var dir = data.new_threads[i][j].is_me == 1 ? "out" : "in"
+             
+               tpl += '<div class="post "' + dir + '">';
+               tpl += '<img class="avatar" alt="" src="' + data.new_threads[i][j].avatar + '"/>';
+               tpl += '<div class="message">';
+               tpl += '<span class="arrow"></span>';
+               tpl += '<a href="#" class="name">' + data.new_threads[i][j].names + '</a>&nbsp;';
+               tpl += '<span class="datetime">' + data.new_threads[i][j].time + '</span>';
+               tpl += '<span class="body">';
+               tpl += data.new_threads[i][j].msg;
+               tpl += '</span>';
+               tpl += '</div>';
+               tpl += '</div>';
+             
+             
+               var message = $(tpl);
+               chatContainer.append(message);
+             
+               }
+               }
+             
+               if(data.total_unread > 0)
+               {
+               $(".chats_total_unread_1").css("display", "none").text("")
+               $(".chats_total_unread_2").text("no")
+               }
+               else
+               {
+               $(".chats_total_unread_1,.chats_total_unread_2").css("display", "block").text(data.total_unread)
+               }
+             
+             
+               })
+               }, 2000)
+             
+               */
+
+
+          });
+
+          function formatHint(hint)
+          {
+              if (hint.loading)
+                  return hint.names
+
+              new_chat.names = hint.names
+              new_chat.id = hint.id
+              new_chat.avatar = hint.avatar
+
+              var markup = '<div class="clearfix"><div class="col-lg-2"><img src="' + hint.avatar + '" style="width: 40px; height:auto;"></div><div class="col-lg-9">&nbsp;&nbsp;&nbsp;' + hint.names + '</div></div>'
+
+              return markup
+          }
+
+          function formatHintSelection(hint)
+          {
+              return hint.names || hint.text
+          }
+
+          var handleChatMessagePost = function (e, dir, time, name, avatar, message)
+          {
+              e.preventDefault();
+
+              var source = $(e.target)
+              var vec = source.attr("vec")
+
+              var chatContainer = wrapperChat.find(".page-quick-sidebar-chat-user-messages[vec='" + vec + "']");
+              var input = wrapperChat.find('.page-quick-sidebar-chat-user-form .form-control[vec="' + vec + '"]');
+
+              var text = input.val();
+              if (text.length === 0 || !vec || vec.length === 0)
+                  {
+                      return;
+                  }
+
+              var preparePost = function ()
+              {
+                  var tpl = '';
+                  tpl += '<div class="post ' + dir + '">';
+                  tpl += '<img class="avatar" alt="" src="' + avatar + '"/>';
+                  tpl += '<div class="message">';
+                  tpl += '<span class="arrow"></span>';
+                  tpl += '<a href="#" class="name">' + name + '</a>&nbsp;';
+                  tpl += '<span class="datetime">' + time + '</span>';
+                  tpl += '<span class="body">';
+                  tpl += message;
+                  tpl += '</span>';
+                  tpl += '</div>';
+                  tpl += '</div>';
+
+                  return tpl;
+              };
+
+              // handle post
+              //var time = new Date();
+              var message = preparePost();
+              message = $(message);
+              chatContainer.append(message);
+
+              var getLastPostPos = function ()
+              {
+                  var height = 0;
+                  chatContainer.find(".post").each(function ()
+                  {
+                      height = height + $(this).outerHeight();
+                  });
+
+                  return height;
+              };
+
+              chatContainer.slimScroll({
+                  scrollTo: getLastPostPos()
+              });
+
+              input.val("");
+
+              // simulate reply
+              /*
+               setTimeout(function(){
+               var time = new Date();
+               var message = preparePost('in', (time.getHours() + ':' + time.getMinutes()), "Ella Wong", 'avatar2', 'Lorem ipsum doloriam nibh...');
+               message = $(message);
+               chatContainer.append(message);
+             
+               chatContainer.slimScroll({
+               scrollTo: getLastPostPos()
+               });
+               }, 3000);*/
+
+              $.ajax({url: "controller/send_chat_msg.php", type: "POST", async: false, data: {rdx: vec, msx: text},
+                  success: function (data)
+                  {
+                      if (data != "ok")
+                          alert("Error: " + data)
+                  },
+                  error: function ()
+                  {
+                      alert("Message not sent. Internet connection lost")
+                  }})
+          };
+
+    </script>
+
+    <!-- END JAVASCRIPTS -->
+
+    <!-- END BODY -->
+  </body>
 </html>
