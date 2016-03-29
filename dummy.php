@@ -1,9 +1,10 @@
 <?php
 require_once 'neuro/Data.php';
 
-//session_start();
+session_start();
 
-//var_dump(Data::get_trade_chart($_SESSION["sess_id"]));
+var_dump(Data::get_trade_chart($_SESSION["sess_id"]));
+/*
 $arr = [];
 $arr[] = ["t1"=>"car", "price"=>30];
 $arr[] = ["t1"=>"car2", "price"=>100];
@@ -20,6 +21,8 @@ foreach($arr as $i=>$elem)
 array_multisort($prices, SORT_ASC, SORT_NUMERIC, $arr);
 
 var_dump($arr);
+ * 
+ */
 
 ?>
 <!--
@@ -45,4 +48,3 @@ var_dump($arr);
       <div style="position: absolute; top: 3px; font-style: normal; font-variant: small-caps; font-weight: 400; font-stretch: normal; font-size: 10px; line-height: 14px; font-family: 'Open Sans', sans-serif; color: rgb(111, 123, 138); left: 1px; text-align: right;">2000</div>
           
     </div></div><canvas class="flot-overlay" width="123" height="250" style="direction: ltr; position: absolute; left: 0px; top: 0px; width: 112px; height: 228px;"></canvas></div>
--->

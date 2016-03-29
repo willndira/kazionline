@@ -322,7 +322,7 @@ var Index = function () {
                 $('#site_activities_content').show();
                 
                 data1 = 0
-                var data1 = [
+                /*var data1 = [
                     ['DEC', 400],
                     ['JAN', 2000],
                     ['FEB', 1100],
@@ -334,8 +334,9 @@ var Index = function () {
                     ['AUG', 1200],
                     ['SEP', 600]
                 ];
-                
-                /*$.ajax
+                */
+               
+                $.ajax
                 ({
                    url:"controller/load_chart_data.php",
                    async:false,
@@ -345,8 +346,7 @@ var Index = function () {
                    {
                        data1 = result
                    }
-                })*/
-                                
+                })                               
                 
                 var plot_statistics = $.plot($("#site_activities"),
 

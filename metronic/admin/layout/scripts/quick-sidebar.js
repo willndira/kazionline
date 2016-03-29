@@ -46,7 +46,8 @@ var QuickSidebar = function () {
         wrapper.find('.page-quick-sidebar-chat-user .page-quick-sidebar-back-to-list').click(function () {
             wrapperChat.removeClass("page-quick-sidebar-content-item-shown");
         });
-
+        
+        /*
         var handleChatMessagePost = function (e) {
             e.preventDefault();
 
@@ -61,10 +62,10 @@ var QuickSidebar = function () {
             var preparePost = function(dir, time, name, avatar, message) {
                 var tpl = '';
                 tpl += '<div class="post '+ dir +'">';
-                tpl += '<img class="avatar" alt="" src="' + Layout.getLayoutImgPath() + avatar +'.jpg"/>';
+                tpl += '<img class="avatar" alt="" src="' + avatar +'"/>';
                 tpl += '<div class="message">';
                 tpl += '<span class="arrow"></span>';
-                tpl += '<a href="#" class="name">Bob Nilson</a>&nbsp;';
+                tpl += '<a href="#" class="name">'+name+'</a>&nbsp;';
                 tpl += '<span class="datetime">' + time + '</span>';
                 tpl += '<span class="body">';
                 tpl += message;
@@ -97,6 +98,7 @@ var QuickSidebar = function () {
             input.val("");
 
             // simulate reply
+            /*
             setTimeout(function(){
                 var time = new Date();
                 var message = preparePost('in', (time.getHours() + ':' + time.getMinutes()), "Ella Wong", 'avatar2', 'Lorem ipsum doloriam nibh...');
@@ -116,6 +118,8 @@ var QuickSidebar = function () {
                 return false;
             }
         });
+        */
+        
     };
 
     // Handles quick sidebar tasks
