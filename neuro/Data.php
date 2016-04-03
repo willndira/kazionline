@@ -10,18 +10,17 @@ class Data
     {
         global $mysqli;
         
-        $res = $mysqli->query("SELECT * FROM job_categories ORDER BY name ASC")
-                  or die($mysqli->error." ".__FILE__." line ".__LINE__);
-        
         $cats = [];
         
-        while($cat = $res->fetch_assoc())
-        {
-            $cats[] = $cat;
-        }
-        $res->close();
+        $res = $mysqli->query("SELECT s.name child, s.id, m.name FROM job_subcategories s INNER JOIN job_categories m "
+                . "ON s.childof=m.id") or die($mysqli->error." ".__FILE__." line ".__LINE__);
         
-        return $cats;        
+        while($data = $res->fetch_assoc())
+        {
+            $cats[$data["name"]][] = ["id"=>$data["id"], "child"=>$data["child"]];
+        }
+        
+        return $cats;
     }
     
     public static function search_tags($key)
@@ -43,6 +42,24 @@ class Data
         $res_t->close();
         
         return json_encode($tags);
+    }
+    
+    public static function tags_info($tags)
+    {
+        global $mysqli;
+        
+        $res = $mysqli->query("SELECT * FROM job_tags WHERE id IN({$tags})") 
+                            or die($mysqli->error." ".__FILE__." line ".__LINE__);
+        
+        $tag_inf = [];
+        while($data = $res->fetch_assoc())
+        {
+            $tag_inf[] = $data;
+        }
+        
+        $res->close();
+        
+        return $tag_inf;
     }
     
     public static function search_users($key)
@@ -304,15 +321,36 @@ class Data
     {
         global $mysqli;
         
-        $sql = "SELECT IFNULL(SUM(amount_max),0) FROM jobs WHERE owner={$user_id} OR id "
-        . "IN(SELECT job_id FROM used_job_tags WHERE tag_id IN(SELECT tag_id FROM user_skills WHERE user_id={$user_id}))";
+        $sum=0;
+        
+        $sql = "SELECT IFNULL(SUM(amount_max * workers_wanted),0) FROM jobs WHERE job_type=1 AND (owner={$user_id} OR id "
+        . "IN(SELECT job_id FROM used_job_tags WHERE tag_id IN(SELECT tag_id FROM user_skills WHERE user_id={$user_id})))";
+        
+        $res1 = $mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);
+        $data1 = $res1->fetch_array();
+        $sum += $data1[0];
+        $res1->close();
+        
+        $sql = "SELECT IFNULL(SUM(amount_max * workers_wanted * hours_a_week),0) FROM jobs WHERE job_type=2 AND duration < (3600*168) AND (owner={$user_id} OR id "
+        . "IN(SELECT job_id FROM used_job_tags WHERE tag_id IN(SELECT tag_id FROM user_skills WHERE user_id={$user_id})))";
+        
+        $res2 = $mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);
+        $data2 = $res2->fetch_array();
+        $sum += $data2[0];
+        $res1->close();
+        
+        $sql = "SELECT IFNULL(SUM(amount_max * workers_wanted * hours_a_week * (duration/(3600*24*7))), 0) "
+                . "FROM jobs WHERE job_type=2 AND duration >= (3600*168) AND (owner={$user_id} OR id "
+                . "IN(SELECT job_id FROM used_job_tags WHERE tag_id IN(SELECT tag_id FROM user_skills WHERE user_id={$user_id})))";
         
         $res_c = $mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);
         $data = $res_c->fetch_array();
         
         $res_c->close();
         
-        return $data[0];              
+        $sum += $data[0];
+        
+        return $sum;              
     }
     
     public static function custom_number_format($number)
@@ -321,7 +359,7 @@ class Data
         
         $f=$num;
         
-        if($num >= pow(10, 4)) //im too lazy
+        if($num >= pow(10, 4)) //im too lazy to write 10000
         {
             $f = round($num/1000, 1);
             $f = $f."K";
@@ -608,5 +646,76 @@ class Data
         
     }
     
+    public static function get_trade_stats($user_id)
+    {
+        global $mysqli;
+        
+        //cash traded
+        $sql = "SELECT SUM(balance) bal FROM user_trade_log WHERE user_id={$user_id} UNION ALL "
+              . "SELECT SUM(balance) bal FROM user_trade_log WHERE user_id={$user_id} AND id < (SELECT MAX(id) FROM user_trade_log)";
+        
+        $res_ct = $mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);
+        
+        $new_d = $res_ct->fetch_assoc();
+        $old_d = $res_ct->fetch_assoc();
+        
+        $res_ct->close();
+        
+        $old_ct = $old_d["bal"];
+        $old_c_div = $old_d["bal"];
+        
+        if(!$old_d["bal"])
+        {
+            $old_ct = 0;            
+        }
+        $old_c_div = $old_c_div == 0 ? 1: $old_c_div; //prevent division by zero
+                
+        $ct_rise = number_format((($new_d["bal"] - $old_ct)/$old_c_div) * 100, 1);
+        
+        //cash received
+        $sql = "SELECT balance bal FROM user_trade_log WHERE id = (SELECT MAX(id) FROM user_trade_log WHERE user_id={$user_id} AND direction=1)"
+        . "UNION ALL SELECT IFNULL(balance, 0) bal FROM user_trade_log WHERE id = (SELECT MAX(id)-1 FROM user_trade_log WHERE user_id={$user_id} AND direction=1)";
+        
+        $res_cr = $mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);
+        
+        $new_r = $res_cr->fetch_assoc();
+        $old_r = $res_cr->fetch_assoc();
+        
+        $res_cr->close();
+        
+        $old_cr = $old_r["bal"];
+        $old_r_div = $old_r["bal"];
+        
+        if(!$old_r["bal"])
+        {
+            $old_cr = 0;
+            $old_r_div = 1; //prevent division by zero
+        }
+        
+        $cr_rate = number_format((($new_r["bal"] - $old_cr)/$old_r_div) * 100, 1);
+        
+        $sql = "SELECT balance bal FROM user_trade_log WHERE id = (SELECT MAX(id) FROM user_trade_log WHERE user_id={$user_id})"
+        . "UNION ALL SELECT IFNULL(balance, 0) bal FROM user_trade_log WHERE id = (SELECT MAX(id)-1 FROM user_trade_log WHERE user_id={$user_id})";
+        
+        $res_bal = $mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);
+        
+        $new_b = $res_bal->fetch_assoc();
+        $old_b = $res_bal->fetch_assoc();
+        
+        $old_bl = $old_b["bal"];
+        $old_b_div = $old_b["bal"];
+        
+        if(!$old_b["bal"])
+        {
+            $old_bl = 0;
+            $old_b_div = 1; //prevent division by zero
+        }
+        
+        $res_bal->close();
+        
+        $bal = number_format((($new_b["bal"] - $old_bl)/$old_b_div) * 100, 1);        
+        
+        return ["ct"=>$ct_rise, "cr"=>$cr_rate, "bal"=>$bal];
+    }
+    
 }
-

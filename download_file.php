@@ -19,7 +19,7 @@ if($download["404"] == TRUE)
 $filename = pathinfo($download["file_path"], PATHINFO_FILENAME);
 $ext = pathinfo($download["file_path"], PATHINFO_EXTENSION);
 
-$nice_name = substr($filename, 0, strrpos($filename, "_")).$ext;
+$nice_name = substr($filename, 0, strrpos($filename, "_")).".".$ext;
 
 header('Content-Type: application/octet-stream');
 header("Content-Transfer-Encoding: Binary"); 

@@ -1,9 +1,37 @@
+<?php
+require_once 'neuro/Jobs.php';
+require_once 'neuro/Data.php';
+require_once 'neuro/security.php';
+
+session_start();
+
+Security::check_session(TRUE);
+
+$me = $_SESSION["sess_id"];
+
+$job_id = filter_input(INPUT_GET, "job");
+
+if ($job_id)
+    $_SESSION["job_id"] = $job_id;
+
+Jobs::job_exists($_SESSION["job_id"]);
+Jobs::cleanup_tmp();
+
+$job_data = Jobs::loadInfo();
+$job_categories = Data::load_job_categories();
+$me = Data::user_data($_SESSION["sess_id"]);
+$my_tasks = Data::load_tasks($_SESSION["sess_id"]);
+$activity_log = Data::load_activity_log($_SESSION["sess_id"]);
+$notifications = Data::load_notifications($_SESSION["sess_id"]);
+$chats = Data::load_chats($_SESSION["sess_id"]);
+$activity_icons = Data::get_activity_types();
+?>
 <!DOCTYPE html>
 <html lang="en" class="no-js">
   <!-- BEGIN HEAD -->
   <head>
     <meta charset="utf-8">
-    <title>Metronic | Admin Dashboard Template</title>
+    <title><?= $job_data["uj_info"]["title"] ?></title>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta content="width=device-width, initial-scale=1" name="viewport">
     <meta content="" name="description">
@@ -404,7 +432,7 @@
                     <i class="icon-lock"></i> Lock Screen </a>
                 </li>
                 <li>
-                  <a href="login.html">
+                  <a href="logout.php">
                     <i class="icon-key"></i> Log Out </a>
                 </li>
               </ul>
@@ -442,7 +470,7 @@
             </li>            
             <li class="sidebar-search-wrapper">
               <!-- BEGIN RESPONSIVE QUICK SEARCH FORM -->              
-              <form class="sidebar-search" action="extra_search.html" method="POST">
+              <form class="sidebar-search" action="jobs.php" method="GET">
                 <a href="javascript:;" class="remove">
                   <i class="icon-close"></i>
                 </a>
@@ -559,11 +587,11 @@
                 <i class="fa fa-angle-right"></i>
               </li>
               <li>
-                <a href="#">Jobs</a>
+                <a href="jobs.php">Jobs</a>
                 <i class="fa fa-angle-right"></i>
               </li>
               <li>
-                <a href="#">title</a>
+                <a href="javascript:;"><?= $job_data["uj_info"]["title"] ?></a>
               </li>
             </ul>            
           </div>
@@ -573,62 +601,26 @@
             <div class="col-md-12 news-page blog-page">
               <div class="row">
                 <div class="col-md-9 blog-tag-data">
-                  <h3>Job Title</h3>
+                  <h3><?= $job_data["uj_info"]["title"] ?></h3>
                   <div class="row">
-                    <div class="col-md-5">Database Administration<br><br></div>
+                    <div class="col-md-5"><?= $job_data["uj_info"]["category"] ?><br><br></div>
                   </div>
                   <div class="row">
                     <div class="col-md-9">
                       <ul class="list-inline sidebar-tags">
-                    <li>
-                      <a href="#">
-                        <i class="fa fa-tags"></i> Business </a>
-                    </li>
-                    <li>
-                      <a href="#">
-                        <i class="fa fa-tags"></i> Music </a>
-                    </li>
-                    <li>
-                      <a href="#">
-                        <i class="fa fa-tags"></i> Internet </a>
-                    </li>
-                    <li>
-                      <a href="#">
-                        <i class="fa fa-tags"></i> Money </a>
-                    </li>
-                    <li>
-                      <a href="#">
-                        <i class="fa fa-tags"></i> Google </a>
-                    </li>
-                    <li>
-                      <a href="#">
-                        <i class="fa fa-tags"></i> TV Shows </a>
-                    </li>
-                    <li>
-                      <a href="#">
-                        <i class="fa fa-tags"></i> Education </a>
-                    </li>
-                    <li>
-                      <a href="#">
-                        <i class="fa fa-tags"></i> Math </a>
-                    </li>
-                    <li>
-                      <a href="#">
-                        <i class="fa fa-tags"></i> Photos </a>
-                    </li>
-                    <li>
-                      <a href="#">
-                        <i class="fa fa-tags"></i> Electronics </a>
-                    </li>
-                    <li>
-                      <a href="#">
-                        <i class="fa fa-tags"></i> Apple </a>
-                    </li>
-                    <li>
-                      <a href="#">
-                        <i class="fa fa-tags"></i> Canada </a>
-                    </li>
-                  </ul>
+                          <?php
+                          foreach ($job_data["tags"] as $tag)
+                          {
+                              ?>
+                            <li>
+                              <a href="javascript:;">
+                                <i class="fa fa-tags"></i> <?= $tag["name"] ?> </a>
+                            </li>
+                            <?php
+                        }
+                        ?>
+
+                      </ul>
                     </div>
                   </div>
                   <div class="row">
@@ -636,19 +628,23 @@
                       <ul class="list-inline">
                         <li>
                           <i class="fa fa-money"></i>
-                          KSH 250-400/hr
+                          KSH <?php
+                        echo number_format($job_data["uj_info"]["amount_min"], 0, ".", ",") . " - " . number_format($job_data["uj_info"]["amount_max"], 0, ".", ",");
+                        if ($job_data["uj_info"]["job_type"] == 2)
+                            echo "/hr";
+                        ?>
                         </li>
                         <li>
                           <i class="fa fa-calendar"></i>
-                          7 weeks
+<?= $job_data["uj_info"]["duration"] ?>
                         </li>
                         <li>
                           <i class="fa fa-users"></i>
-                          4 freelancers needed
+<?= $job_data["uj_info"]["workers_wanted"] ?> freelancers <?= "<span class='badge badge-success'>" . ($job_data["uj_info"]["workers_wanted"] - count($job_data["lucky_bidders"])) . " left</span>"; ?>
                         </li>
                         <li>
                           <i class="fa fa-comments"></i>                           
-                            38 bids
+<?= count($job_data["bids"]) ?> bids
                         </li>
                       </ul>
                     </div>
@@ -656,37 +652,67 @@
                       <ul class="list-inline">
                         <li>
                           <i class="fa fa-clock-o"></i>
-                          posted 9h ago
+                          posted <?= $job_data["posted"] ?>
                         </li>
                       </ul>
                     </div>
                   </div>
                   <div class="row"><div class="col-md-12"><br></div></div>
-                  
+
                   <div class="news-item-page">
                     <p>
-                      At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culp orem ipsum dolor sit amet, consectetur adipiscing elit. Ut non libero magna. Sed et quam lacus. Fusce condimentum eleifend enim a feugiat. At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis est et expedita distinctio lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut non libero consectetur adipiscing elit magna. Sed et quam lacus. Fusce condimentum eleifend enim a feugiat. Pellentesque viverra vehicula sem ut volutpat. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut non libero magna. Sed et quam lacus.
+<?= $job_data["uj_info"]["description"] ?>
                     </p>
-                      <p>
-                        <ul class="list-inline sidebar-tags">
-                        <li>
-                            <i class="fa fa-paperclip"></i>
-                        </li>                        
-                        <li>
-                            <a href="#">Business.docx</a>
-                        </li>
-                        <li>
-                            <a href="#">Picture.jpg</a>
-                        </li>
-                        <li>
-                            <a href="#">SDD.pdf</a>
-                        </li>
-                        
-                        </ul>
-                     </p>
-                     
+                    <p>
+                    <ul class="list-inline sidebar-tags">                      
+                      <li>
+                        <i class="fa fa-paperclip"></i>
+                      </li>  
+
+                      <?php
+                      if (count($job_data["attachments"]) == 0)
+                          echo "<li>No files attached</li>";
+
+                      foreach ($job_data["attachments"] as $file)
+                      {
+                          $filename = pathinfo($file["basename"], PATHINFO_FILENAME);
+                          $ext = pathinfo($file["basename"], PATHINFO_EXTENSION);
+                          $nice_name = substr($filename, 0, strrpos($filename, "_")) .".".$ext;
+
+                          echo "<li><a href='download_file.php?mode=1&id={$file["id"]}'>{$nice_name}</a></li>";
+                      }
+                      ?>                                            
+                      
+                    </ul>
+                    </p>
+
                   </div>
                   <hr>
+                  <h4>Awarded bidders</h4>
+                  <div class="news-item-page">
+                    <div class="row">
+                      <?php
+                      if(count($job_data["lucky_bidders"]) == 0)
+                      {
+                          echo '<div class="col-md-6">No bidders awarded yet</div>';
+                      }
+                      
+                      foreach($job_data["lucky_bidders"] as $lucky)
+                      {
+                      
+                      ?>
+                      <div class="col-md-6">
+                        <br>
+                        <div class="col-md-2"><img alt="" src="<?= $lucky["avatar"] ?>" style="width: 100%; height: auto;" class="media-object avatar"></div>
+                        <div class="col-md-10"><?= $lucky["names"] ?> &nbsp;&nbsp;<i class='fa fa-star' style='color:#FFD700;'></i> <?= $lucky["reputation"] ?> <br>Ksh <?=number_format($lucky["amount"], 0, ".", ",")?> for <?= $lucky["duration"] ?><br><i class="fa fa-fw fa-map-marker"></i><?= $lucky["location"] ?></div>
+                      </div>
+                      <?php
+                      }
+                      ?>
+                    </div>
+                    
+                    <hr>
+                  </div>
                   <div class="media">
                     <h3>Bids</h3>
                     <a href="#" class="pull-left">
@@ -796,65 +822,65 @@
                     </a>                    
                     <a href="#" class="btn green">
                       <span>Assesment</span>                      
-                        <i class="fa fa-tags"></i>
-                        Pending assesment from hirer </em>
+                      <i class="fa fa-tags"></i>
+                      Pending assesment from hirer </em>
                       <i class="fa fa-gavel top-news-icon"></i>
                     </a>
                     <hr>
                   </div>
                   <div class="space20">
                     <div class="row">
-                        <div class="col-md-12">
-                          <button class="btn green-seagreen col-md-10">Edit Job <i class="pull-right fa fa-pencil"></i></button>
-                        </div>
+                      <div class="col-md-12">
+                        <button class="btn green-seagreen col-md-10">Edit Job <i class="pull-right fa fa-pencil"></i></button>
+                      </div>
                     </div>
                     <hr>
                   </div>
                   <div class="space20">
                     <div class="row">
-                        <div class="col-md-12">
-                          <button class="btn red-flamingo col-md-10">Delete Job <i class="pull-right fa fa-trash"></i></button>
-                        </div>
+                      <div class="col-md-12">
+                        <button class="btn red-flamingo col-md-10">Delete Job <i class="pull-right fa fa-trash"></i></button>
+                      </div>
                     </div>
                     <hr>
                   </div>                  
                   <div class="space20">
                     <div class="row">
+                      <div class="col-md-12">
+                        <div class="col-md-12"><h4>Work completed?</h4></div>
+
                         <div class="col-md-12">
-                          <div class="col-md-12"><h4>Work completed?</h4></div>
-                                                    
-                            <div class="col-md-12">
-                              <div class="checkbox">
-                                <label>Mark job as complete&nbsp;&nbsp;&nbsp;<input type="checkbox">
-                                </label>
-                              </div>                          
-                            </div>
-                          
-                          <div class="col-md-12">
-                              <div id="sb-files-upload">Drop files here</div>
-                              <button class="btn blue col-md-10">Confirm <i class="pull-right fa fa-check"></i></button>
-                          </div>
-                          
+                          <div class="checkbox">
+                            <label>Mark job as complete&nbsp;&nbsp;&nbsp;<input type="checkbox">
+                            </label>
+                          </div>                          
                         </div>
+
+                        <div class="col-md-12">
+                          <div id="sb-files-upload">Drop files here</div>
+                          <button class="btn blue col-md-10">Confirm <i class="pull-right fa fa-check"></i></button>
+                        </div>
+
+                      </div>
                     </div>
                     <hr>
                   </div>
-                  
+
                   <div class="space20">
                     <div class="row">
                       <div class="col-md-12"><h4>Rate submitted work</h4></div>
-                        <div class="col-md-12">
-                          <button class="btn red-flamingo col-md-10">Reopen Job <i class="pull-right fa fa-refresh"></i></button>
-                        </div>                        
-                        <div class="col-md-12">
-                          <br>
-                          <button class="btn blue col-md-10">Close Job <i class="pull-right fa fa-check-circle"></i></button>
-                        </div>
-                        
+                      <div class="col-md-12">
+                        <button class="btn red-flamingo col-md-10">Reopen Job <i class="pull-right fa fa-refresh"></i></button>
+                      </div>                        
+                      <div class="col-md-12">
+                        <br>
+                        <button class="btn blue col-md-10">Close Job <i class="pull-right fa fa-check-circle"></i></button>
+                      </div>
+
                     </div>
                     <hr>
                   </div>                  
-                  
+
                 </div>
               </div>
             </div>

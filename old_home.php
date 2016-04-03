@@ -290,16 +290,18 @@ $me = Data::user_data($_SESSION["sess_id"]);
                 <select class="form-control" id="job_category" name="job_category" required="">
                   <option value="">Select Category</option>
                   <?php
-                    foreach($job_categories as $cat)
+                    
+                    foreach($job_categories as $cat=>$child)
                     {
-                        if($cat["name"] == "Other")
-                            continue;
-                ?>
-                <option value="<?= $cat["id"] ?>"><?= $cat["name"] ?></option>
-                <?php
+                        echo '<optgroup label="'.$cat.'">';
+                        foreach($child as $id=>$sub)
+                        {
+                            echo '<option value="'.$id.'">'.$sub.'</option>';
+                        }
+                        echo '</optgroup>';
                     }
-                 ?>                
-                <option value="1">Other</option>
+                  
+                  ?>                
                 </select>
               </div>
 

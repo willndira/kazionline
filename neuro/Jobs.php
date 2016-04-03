@@ -215,40 +215,61 @@ class Jobs
             header("Location:home.php");        
     }
     
-    public static function newJob($title, $desc, $category, $tags, $deadline, $min_budget, $max_budget)
+    public static function newJob($title, $desc, $category, $tags, $duration, $workers, $payment_model, $min_budget, $max_budget, $hpw)
     {
         global $mysqli;
 
         $title = Security::clean_data($title);
         $desc = Security::clean_data($desc);
         $category = Security::clean_data($category);
+        $workers = Security::clean_data($workers);
+        $payment_model = Security::clean_data($payment_model);
         $tags = Security::clean_data($tags);
-        $deadline = Security::clean_data($deadline);
+        $duration = Security::clean_data($duration);
         $min_budget = Security::clean_data($min_budget);
         $max_budget = Security::clean_data($max_budget);
+        $hpw = Security::clean_data($hpw);
 
-        if (!Security::check_empty([$title, $desc, $category, $tags, $deadline, $min_budget, $max_budget]))
+        if (!Security::check_empty([$title, $desc, $category, $tags, $duration, $workers, $payment_model, $min_budget, $max_budget, $hpw]))
         {
             return "Please fill all fields. Only attachments are optional";
+        }
+        
+        if(!in_array($payment_model, ["fixed", "hourly"]))
+        {
+            return "Please set the payment model correctly";
+        }
+        
+        if($payment_model == "hourly" && !intval($hpw))
+        {
+            return "Reset the hours per week";
         }
         
         if($max_budget <= $min_budget)
         {
             return "Budget set incorrectly. Check again";
         }
-
-        $owner = $_SESSION["sess_id"];
-
-        $_dd = explode("/", $deadline);
-        $deadline_stamp = mktime(0, 0, 0, $_dd[1], $_dd[0], $_dd[2]);
-
-        if ($deadline_stamp <= time())
+        
+        if(!in_array($duration, [3,7,14,21,28,35,42,61,92,122,153,183,214,244,275,365,548]))
         {
-            return "Deadline date must be a future date";
+            return "Reset the work duration correctly";
         }
 
-        $mysqli->query("INSERT INTO jobs (title, description, category, deadline, amount_min, amount_max, owner) "
-                        . "VALUES ('{$title}', '{$desc}', {$category}, {$deadline_stamp}, {$min_budget}, {$max_budget}, {$owner})")
+        $owner = $_SESSION["sess_id"];
+        
+        if($duration == 3)
+            $hpw *= 3;
+
+        $duration *= (3600 * 24);
+        
+        $job_type = $payment_model == "fixed"?1:2;
+        
+        $sql = "INSERT INTO jobs (title, description, category, duration, job_type, hours_a_week, workers_wanted,"
+                . "amount_min, amount_max, owner) "
+                        . "VALUES ('{$title}', '{$desc}', {$category}, {$duration},{$job_type}, {$hpw}, {$workers}, "
+                        . "{$min_budget}, {$max_budget}, {$owner})";
+                        
+        $mysqli->query($sql)
                 or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
 
         $job_id = $mysqli->insert_id;
@@ -277,8 +298,9 @@ class Jobs
     {
         global $mysqli;
 
-        $sql = "SELECT j.id, j.title, j.description, j.deadline, FORMAT(j.amount_min, 0) amount_1, FORMAT(j.amount_max, 0) amount_2, jc.name category "
-                . "FROM jobs j INNER JOIN job_categories jc ON j.category=jc.id WHERE j.status=1 ";
+        $sql = "SELECT j.id, j.title, j.description, j.duration, FORMAT(j.amount_min, 0) amount_1, FORMAT(j.amount_max, 0) amount_2, jc.name category, j.job_type, j.hours_a_week, "
+                . "UNIX_TIMESTAMP(j.created_on) created_on,(j.workers_wanted - (SELECT IFNULL(SUM(id),0) FROM job_bids WHERE job_id=j.id AND awarded=1)) spaces_left, "
+                . "(SELECT IFNULL(SUM(id),0) FROM job_bids WHERE job_id=j.id)bids FROM jobs j INNER JOIN job_subcategories jc ON j.category=jc.id WHERE j.status=1 ";
 
         if (!empty($search) || !empty($cat) || !empty($tags) || !empty($amount))
         {            
@@ -294,7 +316,7 @@ class Jobs
 
             if (!empty($amount))
             {
-                $sql.=" AND (amount_min<={$amount} AND amount_max>={$amount}) ";               
+                $sql.=" AND (j.amount_min<={$amount} AND j.amount_max>={$amount}) ";                
             }
 
             if (!empty($tags))
@@ -306,22 +328,51 @@ class Jobs
         
         $sql.=" ORDER BY j.created_on DESC ";
         
-        
+                
         $jobs = [];
+        $job_cats = [];
 
         $res_j = $mysqli->query($sql) or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
 
         $total_count = $res_j->num_rows;
         $total_pages = $total_count / 12;
-
+        
         while ($row = $res_j->fetch_assoc())
         {
             $min_desc = substr($row["description"], 0, 200);
             if (strlen($row["description"]) > 200)
                 $min_desc.="&hellip;<a href='javascript:;' vec='" . $row["id"] . "'>See more</a>";
+            
+            $duration = $row["duration"]/(3600*24);
+            $hours_week = "";
+            
+                        
+            if($duration == 3)
+            {
+                if($row["job_type"] == 2)
+                    $hours_week = ($row["hours_a_week"]/3)."hrs/d";                  
+                
+                $duration .=" days";
+            }                
+            if($duration >= 7 && $duration < 62)
+            {
+                $duration = ($duration/7)." Weeks";
+                if($row["job_type"] == 2) $hours_week = ($row["hours_a_week"])."hrs/w";
+            }                
+            else if($duration >= 62)
+            {
+                $duration = floor($duration/30)." Months";
+                if($row["job_type"] == 2) $hours_week = ($row["hours_a_week"])."hrs/w";
+            }
+            
+            $budget = $row["job_type"] == 1 ? "{$row["amount_1"]} - {$row["amount_2"]}":"{$row["amount_1"]} - {$row["amount_2"]}/hr";
 
-            $jobs[$row["id"]] = ["id"=>$row["id"], "title" => $row["title"], "category" => $row["category"], "due_by" => date("jS M Y", $row["deadline"]),
-                "min_desc" => $min_desc, "max_desc" => $row["description"], "budget" => "{$row["amount_1"]} - {$row["amount_2"]}"];
+            $jobs[$row["id"]] = ["id"=>$row["id"], "title" => $row["title"], "category" => $row["category"], "hours_week"=>$hours_week, "duration" => $duration,
+                "bids"=>$row["bids"], "spaces_left"=>$row["spaces_left"], "min_desc" => $min_desc, "max_desc" => $row["description"], "budget" => $budget,
+                "time"=>self::time_gap($row["created_on"])];
+            
+            $job_cats[$row["id"]] = $row["category"];
+            
         }
         $res_j->close();
 
@@ -339,7 +390,7 @@ class Jobs
                 $tag_ns[] = $tag_inf["name"];
             }
 
-            $tag_ns = implode(", ", $tag_ns);
+            //$tag_ns = implode(", ", $tag_ns);
             $jobs[$job_id]["tags"] = $tag_ns;
 
             $res_tn->close();
@@ -401,17 +452,43 @@ class Jobs
         $pagination_nav.=$raquo;
         $pagination_nav.=$last;
 
-        $html = "";
-
-        foreach (array_slice($jobs, ($page - 1) * 12, 12) as $id => $job)
+        $html = "";        
+        
+        foreach (array_slice($jobs, ($page - 1) * 12, 12) as $job)
         {
-            $html.="<tr><td style='width: 18%;'><a href='jobs.php?job={$job["id"]}'>{$job["title"]}</a></td><td style='width: 30%;'>{$job["min_desc"]}</td><td style='width: 15%;'>{$job["category"]}</td><td style='width: 13%;'>{$job["tags"]}</td><td style='width: 11%;'>{$job["due_by"]}</td><td style='width: 20%;'>{$job["budget"]}</td></tr>";
-        }
+            $html .= '<div class="row">
+                      <div class="col-md-10">
+                        <a href="viewjob.php?job='.$job["id"].'" class="job-main-link text-info">'.$job["title"].'</a>
+                    </div>
+                    <div class="col-md-2 right"><small><i class="fa fa-clock-o"></i> '.$job["time"].'</small></div>
+                    <div class="col-md-4"><br>'.$job["hours_week"].' KSh '.$job["budget"].'</div>
+                    <div class="col-md-3"><br>Duration: '.$job["duration"].'</div>
+                    <div class="col-md-3"><br><span class="fa fa-fw fa-users"></span> '.$job["spaces_left"].' spaces left</div>
+                    <div class="col-md-2 right"><br><span class="badge badge-primary">'.$job["bids"].' bids</span></div>
+                    <div class="col-md-12"><br>
+                        <span class="min_job_desc" vec="'.$job["id"].'">
+                        '.$job["min_desc"].'
+                        </span>
+                        <span class="max_job_desc" vec="'.$job["id"].'">
+                        '.$job["max_desc"].'
+                        </span>
+                      </div>
+                    <div class="col-md-12"><br>';                        
+                        foreach($job["tags"] as $t)
+                        {
+                            $html.= '<span class="label label-primary">'.$t.'</span> ';
+                        }
+                    $html.= '</div>
+                    <div class="col-md-12"><hr></div>
+                  </div>';
+            
+         }
         
         if(strlen($html) == 0)
-            $html = "<tr><td>No jobs found</td></tr>";
+            $html = "<tr><td>No jobs found</td></tr>";      
+        
 
-        return ["pagination" => $pagination_nav, "jobs" => $html];
+        return ["pagination" => $pagination_nav, "jobs" => $html, "job_cats"=> array_count_values($job_cats)];
     }
 
     public static function loadDocket($user_id)
@@ -444,39 +521,72 @@ class Jobs
         return $docket;
     }
 
-    public static function updateJob($title, $desc, $category, $tags, $deadline, $min_budget, $max_budget)
+    public static function updateJob($title, $desc, $category, $tags, $duration, $workers, $payment_model, $min_budget, $max_budget, $hpw)
     {
         global $mysqli;
 
         $title = Security::clean_data($title);
         $desc = Security::clean_data($desc);
         $category = Security::clean_data($category);
+        $workers = Security::clean_data($workers);
+        $payment_model = Security::clean_data($payment_model);
         $tags = Security::clean_data($tags);
-        $deadline = Security::clean_data($deadline);
+        $duration = Security::clean_data($duration);
         $min_budget = Security::clean_data($min_budget);
         $max_budget = Security::clean_data($max_budget);
-
+        $hpw = Security::clean_data($hpw);
+        
         $job_id = $_SESSION["job_id"];
+        
+        //check for accepted bid
 
+        $res_b = $mysqli->query("SELECT id FROM job_bids WHERE job_id={$job_id} AND awarded=1 "
+                . "AND job_id IN(SELECT id FROM jobs WHERE status<4 AND deadline>=UNIX_TIMESTAMP(CURRENT_TIMESTAMP))") 
+                or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
+
+        if ($res_b->num_rows)
+        {
+            $res_b->close();
+            return "You have accepted bids. People are already working on this!";
+        }
+        $res_b->close();
+
+        if (!Security::check_empty([$title, $desc, $category, $tags, $duration, $workers, $payment_model, $min_budget, $max_budget]))
+        {
+            return "Please fill all fields. Only attachments are optional";
+        }
+        
         if (!self::auth_job($job_id, $_SESSION["sess_id"]))
         {
             return "Only the owner can do this operation";
         }
 
-        if (!Security::check_empty([$title, $desc, $category, $tags, $deadline, $min_budget, $max_budget]))
+        if(!in_array($payment_model, ["fixed", "hourly"]))
         {
-            return "Please fill all fields. Only attachments are optional";
+            return "Please set the payment model correctly";
         }
-
-        $_dd = explode("/", $deadline);
-        $deadline_stamp = mktime(0, 0, 0, $_dd[1], $_dd[0], $_dd[2]);
-
-        if ($deadline_stamp <= time())
+        
+        if($payment_model == "hourly" && !intval($hpw))
         {
-            return "Deadline date must be a future date";
+            return "Reset the hours per week";
         }
+        
+        if($max_budget <= $min_budget)
+        {
+            return "Budget set incorrectly. Check again";
+        }
+        
+        if(!in_array($duration, [3,7,14,21,28,35,42,61,92,122,153,183,214,244,275,365,548]))
+        {
+            return "Reset the work duration correctly";
+        }
+        
+        $duration *= (3600 * 24);
+        
+        $job_type = $payment_model == "fixed"?1:2;
 
-        $mysqli->query("UPDATE jobs SET title='{$title}', description='{$desc}', category={$category}, deadline={$deadline_stamp}, "
+        $mysqli->query("UPDATE jobs SET title='{$title}', description='{$desc}', category={$category}, duration={$duration}, "
+                        . "job_type={$job_type}, hours_a_week={$hpw}, workers_wanted={$workers}, "
                         . "amount_min={$min_budget}, amount_max={$max_budget} WHERE id={$job_id}")
                 or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
 
@@ -523,7 +633,7 @@ class Jobs
         if ($res_b->num_rows)
         {
             $res_b->close();
-            return "The bidder is still working and it's not yet deadline";
+            return "You have accepted bids. People are already working on this!";
         }
         $res_b->close();
 
@@ -564,32 +674,47 @@ class Jobs
         
         //set user's reputation
         
-        $bid = self::update_user_reputation($rating);
+        self::update_user_reputation($rating);
         
         //set the job status as confirmed        
                 
         $mysqli->query("UPDATE jobs SET status=4 WHERE id={$job_id}") or die($mysqli->error." ".__FILE__." line ".__LINE__);
         
         //move the cash
-        $sql = "UPDATE users u INNER JOIN job_bids jb ON jb.user_id=u.id "
-                . "SET u.balance = u.balance + (jb.amount * 0.9), u.total_transacted = u.total_transacted + (jd.amount * 0.9) "
+        $sql = "UPDATE users u INNER JOIN job_bids jb ON jb.user_id=u.id INNER JOIN jobs j ON j.id=jb.job_id "
+                . "SET u.balance = "
+                . "CASE WHEN j.job_type = 1 THEN u.balance + (jb.amount * 0.9) "
+                . "WHEN j.duration >= (3600*168) THEN u.balance + (jb.amount * (j.hours_a_week * (j.duration/(3600*24*7)))*0.9) "
+                . "ELSE u.balance + (jb.amount * j.hours_a_week * 0.9) "
+                . "END u.total_transacted = "
+                . "CASE WHEN j.job_type = 2 THEN u.total_transacted + (jb.amount * (j.hours_a_week * (j.duration/(3600*24*7)))*0.9) "
+                . "ELSE u.total_transacted + (jd.amount * 0.9) END "
                 . "WHERE jb.job_id={$job_id} AND jb.awarded=1";
         
         $mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);
         
-        //send notification to bidder
+        //add the revenue to our account
+        $sql = "UPDATE kzo_revenue SET amount = amount + "
+                . "(SELECT (CASE WHEN j.job_type = 1 THEN SUM(jb.amount * 0.1) "
+                . "WHEN j.duration < (3600*168) THEN SUM(jb.amount * j.hours_a_week * 0.1) "
+                . "ELSE SUM(jb.amount * (j.hours_a_week * (j.duration/(3600*24*7)))*0.1) "
+                . "END) FROM jobs j INNER JOIN job_bids jb ON j.id=jb.job_id "
+                . "WHERE j.id={$job_id}) WHERE id=1";
+                
+        $mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);
         
-        $new_amt = $bid["bid"] * 0.9;
-        $ttl = self::get_20chartitle_deadline();
+        //update owner's total transaction
         
-        $notif = "Payment received! The owner of job {$ttl["title"]} rated your services {$rating}/5. You receive KSH {$new_amt} "
-        . "after 10% service fee deduction. You earned {$bid["points"]} reputation points";
-        
-        $mysqli->query("INSERT INTO notifications (user_id, msg) VALUES ({$bid["bid"]["user_id"]}, '{$notif}')")
-                or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
-        
-        return self::deleteJob(); //should return "ok"
-        
+        $sql = "UPDATE users u INNER JOIN jobs j ON j.owner=u.id INNER JOIN job_bids jb ON jb.job_id=j.id "
+                . "SET u.total_transacted = "
+                . "CASE WHEN j.job_type = 1 THEN u.total_transcated + SUM(jb.amount * 0.9) "
+                . "WHEN j.duration >= (3600*168) THEN u.total_transacted + SUM(jb.amount * (j.hours_a_week * (j.duration/(3600*24*7)))*0.9) "
+                . "ELSE u.total_transacted + SUM(jb.amount * j.hours_a_week * 0.9) END "
+                . "WHERE jb.job_id={$job_id} AND jb.awarded=1";
+                
+        $mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);        
+                
+        return self::deleteJob(); //should return "ok"        
     }
     
     public static function uploadFiles()
@@ -657,14 +782,15 @@ class Jobs
         return $auth;
     }
     
-    public static function newBid($bid_comment, $bid_amount)
+    public static function newBid($bid_comment, $bid_amount, $bid_duration)
     {
         global $mysqli;
 
         $bid_amount = Security::clean_data($bid_amount);
         $bid_comment = Security::clean_data($bid_comment);
+        $bid_duration = Security::clean_data($bid_duration);
 
-        if (!Security::check_empty([$bid_amount, $bid_comment]))
+        if (!Security::check_empty([$bid_amount, $bid_comment, $bid_duration]))
             return "Please fill all fields";
 
         $user_id = $_SESSION["sess_id"];
@@ -688,25 +814,28 @@ class Jobs
             $res_c->close();
             return "This job has already been taken";
         }
-        $res_c->close();      
+        $res_c->close();
+        
+        $bid_duration *= 3600 * 24;
         
 
-        $sql = "INSERT INTO job_bids(job_id, user_id, amount, comment) "
-                . "VALUES ({$job_id}, {$user_id}, {$bid_amount}, '{$bid_comment}')";
+        $sql = "INSERT INTO job_bids(job_id, user_id, amount, duration, comment) "
+                . "VALUES ({$job_id}, {$user_id}, {$bid_amount}, {$bid_duration}, '{$bid_comment}')";
 
         $mysqli->query($sql) or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
 
         return "ok";
     }
 
-    public static function editBid($bid_comment, $bid_amount)
+    public static function editBid($bid_comment, $bid_amount, $bid_duration)
     {
         global $mysqli;
 
         $bid_amount = Security::clean_data($bid_amount);
         $bid_comment = Security::clean_data($bid_comment);
+        $bid_duration = Security::clean_data($bid_duration);
 
-        if (!Security::check_empty([$bid_amount, $bid_comment]))
+        if (!Security::check_empty([$bid_amount, $bid_comment, $bid_duration]))
             return "Please fill all fields";
 
         $user_id = $_SESSION["sess_id"];
@@ -718,7 +847,10 @@ class Jobs
             return "Your bid doesn't exist";
         }
         
-        $sql = "UPDATE job_bids SET comment='{$bid_comment}', amount={$bid_amount} WHERE user_id={$user_id} AND job_id={$job_id}";
+        $bid_duration *= 3600 * 24;
+        
+        $sql = "UPDATE job_bids SET comment='{$bid_comment}', amount={$bid_amount}, duration={$bid_duration} "
+        . "WHERE user_id={$user_id} AND job_id={$job_id}";
 
         $mysqli->query($sql) or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
 
@@ -769,17 +901,21 @@ class Jobs
         }
         
         $res_e->close();
-
-        $res_c = $mysqli->query("SELECT id FROM job_bids WHERE job_id={$job_id} AND awarded=1")
-                or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
-
-        if ($res_c->num_rows)
-        {
-            $res_c->close();
-            return "You have already awarded this job to another bidder";
-        }
-        $res_c->close();
         
+        $sql = "SELECT (CASE WHEN COUNT(id) < (SELECT workers_wanted FROM jobs WHERE id={$job_id}) THEN 1 ELSE 0 END) chk "
+                . "FROM job_bids WHERE job_id={$job_id} AND awarded=1";
+
+        $res_c = $mysqli->query($sql)
+                or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
+        
+        $data_c = $res_c->fetch_assoc();
+        $res_c->close();
+
+        if ($data_c["chk"] == 0)
+        {
+            return "You have already awarded this job to all bidders";
+        }
+                
         $bid_inf = self::get_bid_owner($bid_id);
         
         //check balance        
@@ -787,25 +923,52 @@ class Jobs
         $res_b = $mysqli->query("SELECT id FROM users WHERE id={$user_id} AND balance >= {$bid_inf["amount"]}")
                 or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
         
+        $res_b = $mysqli->query("SELECT u.balance, j.job_type, j.hours_a_week, j.duration FROM jobs j "
+                . "INNER JOIN users u ON j.owner=u.id WHERE j.id={$job_id}") or die($mysqli->error." ".__FILE__." line ".__LINE__);
+                
+        $data_b = $res_b->fetch_assoc();
+        $res_b->close();
         
-        if (!$res_b->num_rows)
+        if($data_b["job_type"] == 1 && $data_b["balance"] < $bid_inf["amount"])//fixed price
         {
-            $res_b->close();
             return "You do not have enough money in your account. KSH {$bid_inf["amount"]} needs to be deducted ";
         }
-        $res_b->close();
+        
+        if($data_b["job_type"] == 2 && $data_b["duration"] < (3600 * 168) &&$data_b["balance"] < ($data_b["hours_a_week"] * $bid_inf["amount"]))
+        {
+            return "You do not have enough money in your account. KSH ".($bid_inf["amount"] * $data_b["hours_a_week"])." needs to be deducted ";
+        }
+        
+        $no_weeks = $data_b["duration"]/(3600*24)/7;
+        
+        if($data_b["job_type"] == 2 && $data_b["balance"] < ($bid_inf["amount"] * $data_b["hours_a_week"] * $no_weeks))
+        {
+            return "You do not have enough money in your account. KSH ".($bid_inf["amount"] * $data_b["hours_a_week"] *  $no_weeks)." needs to be deducted ";
+        }
+        
+        if($data_b["job_type"] == 2)
+            $amount_needed = $no_weeks * $bid_inf["amount"];
+        else
+            $amount_needed = $bid_inf["amount"];
         
         //move the money
         
-        $mysqli->query("UPDATE users SET balance = balance-{$bid_inf["amount"]} "
+        $mysqli->query("UPDATE users SET balance = balance-{$amount_needed} "
         . "WHERE id={$user_id}") or die($mysqli->error." ".__FILE__." line ".__LINE__);
 
         $mysqli->query("UPDATE job_bids SET awarded=1 WHERE id={$bid_id}")
                 or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
 
-        //set job status to 2 'in progress'
-
-        $mysqli->query("UPDATE jobs SET status=2 WHERE id={$job_id}") or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
+        //set job status to 2 'in progress' if all freelancers have been found
+        
+        $res_num_c = $mysqli->query("SELECT COUNT(b.id) bids, j.workers_wanted FROM jobs j INNER JOIN job_bids b ON b.job_id=j.id "
+                . "WHERE j.id = {$job_id} AND b.awarded=1") or die($mysqli->error." ".__FILE__." line ".__LINE__);
+        $data_num = $res_num_c->fetch_assoc();
+        
+        if($data_num["bids"] == $data_num["workers_wanted"])
+            $mysqli->query("UPDATE jobs SET status=2 WHERE id={$job_id}") or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
+            
+        $res_num_c->close();        
 
         //send notification to successful bidder
         
@@ -833,7 +996,7 @@ class Jobs
             return "This job isn't yours";
         
         //set bidder's reputation
-        $bid = self::update_user_reputation($rating);
+        self::update_user_reputation($rating, FALSE);
         
         //uncheck the awarded bid and reset the job status back to 1
         
@@ -841,8 +1004,13 @@ class Jobs
                      . "UPDATE jobs SET status=1 WHERE id={$job_id}") or die($mysqli->error." ".__FILE__." line ".__LINE__);
                      
         //return the money
-        $mysqli->query("UPDATE users u INNER JOIN jobs j ON j.owner=u.id INNER JOIN job_bids jb ON j.id=jb.job_id "
-                . "SET u.balance = u.balance + jb.amount WHERE j.id={$job_id} AND jb.awarded=1") or die($mysqli->error." ".__FILE__." line ".__LINE__);          
+        $sql = "UPDATE users u INNER JOIN jobs j ON j.owner=u.id INNER JOIN job_bids jb ON jb.job_id=j.id SET u.balance = "
+                . "(CASE WHEN j.job_type = 1 THEN u.balance + SUM(b.amount) "
+                . "WHEN j.duration < (3600*168) THEN u.balance + SUM(b.amount * j.hours_a_week) "
+                . "ELSE u.balance + SUM(b.amount * j.hours_a_week * (j.duration/(3600*24*7)) "
+                . "END) WHERE j.id={$job_id}";             
+        
+        $mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);          
         
         //delete any previously submitted work
         $res = $mysqli->query("SELECT file_path FROM jobsb_files WHERE job_id={$job_id}") 
@@ -857,16 +1025,6 @@ class Jobs
         
         $mysqli->query("DELETE FROM jobsb_files WHERE job_id={$job_id}")
                     or die($mysqli->error." ".__FILE__." line ".__LINE__);
-        
-        //send notification to unsuccessful bidder        
-        
-        $ttl = self::get_20chartitle_deadline();
-        
-        $notif = "We're a sorry! The owner of job {$ttl["title"]} rated your services {$rating}/5 and deemed your work not good enough. "
-        . "The owner reopened the job to other bidders. You earned {$bid["points"]} reputation points";
-        
-        $mysqli->query("INSERT INTO notifications (user_id, msg) VALUES ({$bid["bid"]["user_id"]}, '{$notif}')")
-                or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
         
         return "ok";                     
     }
@@ -896,22 +1054,51 @@ class Jobs
         return $points;
     }
     
-    private static function update_user_reputation($rating)
+    private static function update_user_reputation($rating, $Reward=TRUE)
     {
         global $mysqli;
         
         $job_id = $_SESSION["job_id"];
         
-        $res_amt = $mysqli->query("SELECT amount, user_id FROM job_bids WHERE job_id={$job_id} AND awarded=1") 
-                            or die($mysqli->error." ".__FILE__." line ".__LINE__);
+        $sql = "SELECT (CASE WHEN j.job_type = 2 THEN b.amount * (j.hours_a_week * (j.duration/(3600*24*7)))*0.9 "
+                . "ELSE b.amount*0.9 END) AS awarded_cash, b.user_id, j.job_type, j.hours_a_week FROM job_bids b INNER JOIN jobs j ON b.job_id=j.id "
+                . "WHERE b.job_id={$job_id} AND b.awarded=1";
         
-        $amount_d = $res_amt->fetch_assoc();
+        $res_amt = $mysqli->query($sql) 
+                            or die($mysqli->error." ".__FILE__." line ".__LINE__);                
+             
+        while($amount_d = $res_amt->fetch_assoc())
+        {
+            $user_points = self::caculate_reputation($amount_d["awarded_cash"], $rating);            
+            
+            $ttl = self::get_20chartitle_deadline();
+            
+            //send notification to bidder
+            
+            $mysqli->query("UPDATE users SET reputation = reputation + {$user_points} WHERE id={$amount_d["user_id"]}")
+                    or die($mysqli->error." ".__FILE__." line ".__LINE__);
+            
+            if($Reward)
+            {
+                $notif = "Payment received! The owner of job {$ttl["title"]} rated your services {$rating}/5. You receive KSH {$amount_d["awarded_cash"]} "
+                . "after 10% service fee deduction. You earned {$user_points} reputation points";
+        
+                $mysqli->query("INSERT INTO notifications (user_id, msg) VALUES ({$amount_d["user_id"]}, '{$notif}')")
+                or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
+                
+            }
+            else
+            {
+                $notif = "We're a sorry! The owner of job {$ttl["title"]} rated your services {$rating}/5 and deemed your work not good enough. "
+                    . "The owner reopened the job to other bidders. You earned {$user_points} reputation points";
+        
+                $mysqli->query("INSERT INTO notifications (user_id, msg) VALUES ({$amount_d["user_id"]}, '{$notif}')")
+                    or die($mysqli->error . " " . __FILE__ . " line " . __LINE__);
+            }
+            
+        }
+        
         $res_amt->close();
-        
-        $user_points = self::caculate_reputation($amount_d["amount"], $rating);
-        
-        $mysqli->query("UPDATE users SET reputation = reputation + {$user_points} WHERE id={$amount_d["user_id"]}")
-                  or die($mysqli->error." ".__FILE__." line ".__LINE__);
         
         return ["bid"=>$amount_d, "points"=>$user_points];        
     }
@@ -933,11 +1120,15 @@ class Jobs
         $gen_info["me"]["is_owner"] = FALSE;
         $gen_info["me"]["has_bidded"] = FALSE;
         $gen_info["me"]["my_bid_awarded"] = FALSE;
-        $gen_info["job"]["has_bid_awarded"] = FALSE;
+        $gen_info["job"]["has_all_bids_awarded"] = FALSE;
         
-        $sql = "SELECT u.names, u.location, u.avatar, j.category cat_id, c.name category, j.owner, j.title, j.description, j.deadline, j.amount_min, j.amount_max, j.status, "
-                . "UNIX_TIMESTAMP(j.created_on) created_on FROM jobs j INNER JOIN users u ON j.owner=u.id "
-                . "INNER JOIN job_categories c ON j.category=c.id "
+        $sql = "SELECT u.names, u.location, u.avatar, j.category cat_id, c.name category, j.owner, j.title, j.description, j.amount_min, j.amount_max, j.status, "
+                . "j.job_type, j.workers_wanted, j.hours_a_week, UNIX_TIMESTAMP(j.created_on) created_on, j.duration raw_duration, "
+                . "(CASE WHEN j.duration < (3600 * 168) THEN CONCAT(FLOOR(j.duration/(3600 * 24)), ' days') "
+                . "WHEN j.duration >= (3600 * 168) && j.duration <= (3600 * 24 * 61) THEN CONCAT(FLOOR(j.duration/(3600 *24 * 7)), ' weeks') "
+                . "ELSE CONCAT(FLOOR(j.duration/(3600 * 24 * 30)), ' months') END) AS duration "
+                . "FROM jobs j INNER JOIN users u ON j.owner=u.id "
+                . "INNER JOIN job_subcategories c ON j.category=c.id "
                 . "WHERE j.id={$job_id}"; 
                 
                                 
@@ -975,10 +1166,16 @@ class Jobs
             $sb_files[] = ["id"=>$sb["id"], "basename"=>pathinfo($sb["file_path"], PATHINFO_BASENAME)];
         }
         
-        $sql = "SELECT u.id bidder, u.location, u.names, u.avatar, u.reputation, b.id, b.amount, b.awarded, b.comment, UNIX_TIMESTAMP(b.stamp) stamp FROM job_bids b "
+        $sql = "SELECT u.id bidder, u.location, u.names, u.avatar, u.reputation, b.id, b.amount, b.duration raw_duration, b.awarded, b.comment, "
+                . "(CASE WHEN b.duration < (3600 * 168) THEN CONCAT(FLOOR(b.duration/(3600 * 24)), ' days') "
+                . "WHEN b.duration >= (3600 * 168) && b.duration <= (3600 * 24 * 61) THEN CONCAT(FLOOR(b.duration/(3600 *24 * 7)), ' weeks') "
+                . "ELSE CONCAT(FLOOR(b.duration/(3600 * 24 * 30)), ' months') END) AS duration, UNIX_TIMESTAMP(b.stamp) stamp FROM job_bids b "
                 . "INNER JOIN users u ON b.user_id=u.id WHERE b.job_id={$job_id}";
                 
         $res_bids = $mysqli->query($sql) or die($mysqli->error." ".__FILE__." line ".__LINE__);
+        
+        $bids_awarded=0;
+        $lucky_bidders = [];
         
         while($bid = $res_bids->fetch_assoc())
         {
@@ -989,7 +1186,13 @@ class Jobs
                     $gen_info["me"]["my_bid_awarded"] = TRUE;
             }
             if($bid["awarded"] == 1)
-                $gen_info["job"]["has_bid_awarded"] = TRUE;            
+            {
+                $bids_awarded++;
+                $lucky_bidders[] = $bid;
+                
+                if($bids_awarded == $bid["workers_wanted"])
+                    $gen_info["job"]["has_all_bids_awarded"] = TRUE;
+            }   
             
             $bids[] = $bid;
         }
@@ -997,7 +1200,7 @@ class Jobs
         $res_bids->close();
         
         return ["gen_info"=>$gen_info, "uj_info"=>$uj_info, "attachments"=>$attachments, "tags"=>$tags, "sb_files"=>$sb_files, 
-                "bids"=>$bids];
+                "bids"=>$bids, "lucky_bidders"=>$lucky_bidders, "posted"=>self::time_gap($uj_info["created_on"])];
     }
     
     public static function time_gap($stamp)
